@@ -39,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return RefreshIndicator(
             onRefresh: () async {
               await provider.loadData();
-              await provider.calculateDailyInterests();
+              // Los intereses se calculan automáticamente al iniciar la app
             },
             child: ListView(
               padding: const EdgeInsets.all(16),

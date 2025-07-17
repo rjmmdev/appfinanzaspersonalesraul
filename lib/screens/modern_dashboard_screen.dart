@@ -8,8 +8,7 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import 'modern_accounts_screen.dart';
 import 'transactions_screen.dart';
-import 'modern_add_transaction_screen.dart';
-import 'cfdi_guide_screen.dart';
+import 'modern_add_transaction_screen_v2.dart';
 import 'invoices_screen.dart';
 
 class ModernDashboardScreen extends StatefulWidget {
@@ -25,9 +24,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FinanceProvider>().loadData();
-    });
+    // La carga de datos ya se hace en initializeDefaultAccounts() al crear el provider
   }
 
   @override
@@ -62,7 +59,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const ModernAddTransactionScreen(),
+              builder: (context) => const ModernAddTransactionScreenV2(),
             ),
           );
         },
@@ -96,9 +93,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange[50],
+                color: Colors.grey[50],
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange[200]!),
+                border: Border.all(color: Colors.grey[300]!),
               ),
               child: Column(
                 children: [
@@ -114,7 +111,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       Text(
                         currencyFormat.format(balancesBySource['work'] ?? 0),
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.orange[700],
                         ),
@@ -134,9 +131,29 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       Text(
                         currencyFormat.format(balancesBySource['personal'] ?? 0),
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.family_restroom, color: Colors.green[700], size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Dinero Familiar',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      Text(
+                        currencyFormat.format(balancesBySource['family'] ?? 0),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
                         ),
                       ),
                     ],
@@ -201,6 +218,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   Widget _buildQuickStats(FinanceProvider provider) {
     final workTransactions = provider.getTransactionsBySource(MoneySource.work);
     final personalTransactions = provider.getTransactionsBySource(MoneySource.personal);
+    final familyTransactions = provider.getTransactionsBySource(MoneySource.family);
     
     return Card(
       child: Padding(
@@ -209,7 +227,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Estadísticas por Fuente',
+              'Transacciones por Fuente',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
@@ -218,6 +236,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               children: [
                 _buildStatItem('Trabajo', workTransactions.length.toString(), Icons.work, Colors.orange),
                 _buildStatItem('Personal', personalTransactions.length.toString(), Icons.person, Colors.blue),
+                _buildStatItem('Familiar', familyTransactions.length.toString(), Icons.family_restroom, Colors.green),
                 _buildStatItem('Cuentas', provider.accounts.length.toString(), Icons.account_balance, AppTheme.primaryColor),
               ],
             ),
@@ -280,21 +299,95 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   }
 
   Widget _buildAccountItem(Account account) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: _getBankColor(account.bankType),
-        child: Text(
-          account.bankType.name.substring(0, 1).toUpperCase(),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    final provider = context.read<FinanceProvider>();
+    final accountBalances = provider.getAccountBalancesBySource();
+    final balances = accountBalances[account.id] ?? {
+      'personal': 0,
+      'work': 0,
+      'family': 0,
+      'total': 0,
+    };
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: _getBankColor(account.bankType),
+                radius: 20,
+                child: Text(
+                  account.bankType.name.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      account.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                    ),
+                    Text(
+                      '${account.annualInterestRate}% anual',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                currencyFormat.format(account.balance),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildSourceBalance('Trabajo', balances['work']!, Colors.orange),
+                _buildSourceBalance('Personal', balances['personal']!, Colors.blue),
+                _buildSourceBalance('Familiar', balances['family']!, Colors.green),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSourceBalance(String label, double amount, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: color),
         ),
-      ),
-      title: Text(account.name),
-      subtitle: Text('${account.annualInterestRate}% anual'),
-      trailing: Text(
-        currencyFormat.format(account.balance),
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          currencyFormat.format(amount),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 
@@ -371,19 +464,25 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               childAspectRatio: 2.5,
               children: [
                 _buildActionButton(
-                  'Dinero Trabajo',
+                  'Trabajo',
                   Icons.work,
                   () => _showTransactionsBySource(MoneySource.work),
                   color: Colors.orange,
                 ),
                 _buildActionButton(
-                  'Dinero Personal',
+                  'Personal',
                   Icons.person,
                   () => _showTransactionsBySource(MoneySource.personal),
                   color: Colors.blue,
                 ),
                 _buildActionButton(
-                  'Ver Todo',
+                  'Familiar',
+                  Icons.family_restroom,
+                  () => _showTransactionsBySource(MoneySource.family),
+                  color: Colors.green,
+                ),
+                _buildActionButton(
+                  'Todo',
                   Icons.receipt,
                   () => Navigator.push(
                     context,
@@ -391,19 +490,11 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                   ),
                 ),
                 _buildActionButton(
-                  'Gestionar Cuentas',
+                  'Cuentas',
                   Icons.account_balance,
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const ModernAccountsScreen()),
-                  ),
-                ),
-                _buildActionButton(
-                  'Guía CFDI',
-                  Icons.help,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CFDIGuideScreen()),
                   ),
                 ),
                 _buildActionButton(
@@ -455,8 +546,16 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     final provider = context.read<FinanceProvider>();
     final filteredTransactions = provider.getTransactionsBySource(source);
     
-    final sourceTitle = source == MoneySource.work ? 'Trabajo' : 'Personal';
-    final sourceColor = source == MoneySource.work ? Colors.orange : Colors.blue;
+    final sourceTitle = source == MoneySource.work 
+        ? 'Trabajo' 
+        : source == MoneySource.family 
+            ? 'Familiar' 
+            : 'Personal';
+    final sourceColor = source == MoneySource.work 
+        ? Colors.orange 
+        : source == MoneySource.family 
+            ? Colors.green 
+            : Colors.blue;
     
     showModalBottomSheet(
       context: context,
@@ -487,7 +586,11 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 child: Row(
                   children: [
                     Icon(
-                      source == MoneySource.work ? Icons.work : Icons.person,
+                      source == MoneySource.work 
+                          ? Icons.work 
+                          : source == MoneySource.family 
+                              ? Icons.family_restroom 
+                              : Icons.person,
                       color: sourceColor,
                       size: 24,
                     ),
@@ -526,7 +629,11 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              source == MoneySource.work ? Icons.work_off : Icons.person_off,
+                              source == MoneySource.work 
+                                  ? Icons.work_off 
+                                  : source == MoneySource.family 
+                                      ? Icons.family_restroom 
+                                      : Icons.person_off,
                               size: 64,
                               color: Colors.grey[400],
                             ),

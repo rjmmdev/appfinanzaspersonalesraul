@@ -350,13 +350,36 @@ class FinanceProvider extends ChangeNotifier {
 
 
   Future<void> initializeDefaultAccounts() async {
-    // No hacer nada por ahora, las cuentas se crearán manualmente
+    // Cargar datos primero
     await loadData();
+    // Verificar y aplicar intereses diarios si no se han aplicado hoy
+    await checkAndApplyDailyInterests();
   }
 
-  Future<void> calculateDailyInterests() async {
-    // TODO: Implementar cálculo de intereses en Firebase
-    print('Daily interests calculation pending implementation');
+  Future<void> checkAndApplyDailyInterests() async {
+    try {
+      print('FinanceProvider: Checking if daily interests need to be applied...');
+      
+      // Verificar si ya se aplicaron intereses hoy
+      final hasAppliedToday = await _firebaseService.hasAppliedInterestsToday();
+      
+      if (hasAppliedToday) {
+        print('FinanceProvider: Daily interests already applied today');
+        return;
+      }
+      
+      print('FinanceProvider: Daily interests not applied today, applying now...');
+      
+      // Aplicar intereses diarios
+      await _firebaseService.calculateAndApplyDailyInterests();
+      
+      // Recargar datos para reflejar los nuevos balances
+      await loadData();
+      
+      print('FinanceProvider: Daily interests applied successfully');
+    } catch (e) {
+      print('Error checking/applying daily interests: $e');
+    }
   }
 
   List<Transaction> getDeductibleTransactions() {
@@ -371,6 +394,7 @@ class FinanceProvider extends ChangeNotifier {
   Map<String, double> getBalancesBySource() {
     double personalBalance = 0;
     double workBalance = 0;
+    double familyBalance = 0;
 
     for (final transaction in _transactions) {
       if (transaction.source == MoneySource.personal) {
@@ -385,17 +409,68 @@ class FinanceProvider extends ChangeNotifier {
         } else if (transaction.type == TransactionType.expense) {
           workBalance -= transaction.amount;
         }
+      } else if (transaction.source == MoneySource.family) {
+        if (transaction.type == TransactionType.income) {
+          familyBalance += transaction.amount;
+        } else if (transaction.type == TransactionType.expense) {
+          familyBalance -= transaction.amount;
+        }
       }
     }
 
     return {
       'personal': personalBalance,
       'work': workBalance,
-      'total': personalBalance + workBalance,
+      'family': familyBalance,
+      'total': personalBalance + workBalance + familyBalance,
     };
   }
 
   List<Transaction> getTransactionsBySource(MoneySource source) {
     return _transactions.where((t) => t.source == source).toList();
+  }
+  
+  // Obtener el desglose de cada cuenta por fuente de dinero
+  Map<int, Map<String, double>> getAccountBalancesBySource() {
+    Map<int, Map<String, double>> accountBalances = {};
+    
+    // Inicializar el mapa para cada cuenta
+    for (final account in _accounts) {
+      accountBalances[account.id!] = {
+        'personal': 0,
+        'work': 0,
+        'family': 0,
+        'total': 0,
+      };
+    }
+    
+    // Calcular los balances por fuente para cada cuenta
+    for (final transaction in _transactions) {
+      if (accountBalances.containsKey(transaction.accountId)) {
+        final amount = transaction.type == TransactionType.income 
+            ? transaction.amount 
+            : -transaction.amount;
+            
+        switch (transaction.source) {
+          case MoneySource.personal:
+            accountBalances[transaction.accountId]!['personal'] = 
+                accountBalances[transaction.accountId]!['personal']! + amount;
+            break;
+          case MoneySource.work:
+            accountBalances[transaction.accountId]!['work'] = 
+                accountBalances[transaction.accountId]!['work']! + amount;
+            break;
+          case MoneySource.family:
+            accountBalances[transaction.accountId]!['family'] = 
+                accountBalances[transaction.accountId]!['family']! + amount;
+            break;
+        }
+        
+        accountBalances[transaction.accountId]!['total'] = 
+            accountBalances[transaction.accountId]!['total']! + amount;
+      }
+    }
+    
+    return accountBalances;
   }
 }

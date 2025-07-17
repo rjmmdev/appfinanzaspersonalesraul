@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 enum MoneySource {
   personal, // Dinero personal
   work,     // Dinero del trabajo
+  family,   // Dinero familiar
 }
 
 @immutable

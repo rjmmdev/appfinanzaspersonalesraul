@@ -15,7 +15,8 @@
       "Bash(dart analyze:*)",
       "Bash(dart format:*)",
       "Bash(del libservicesdatabase_service.dart libservicessync_service.dart libserviceslocal_only_service.dart)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

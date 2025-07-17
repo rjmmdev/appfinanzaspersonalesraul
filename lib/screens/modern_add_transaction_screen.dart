@@ -198,16 +198,31 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                     color: Colors.orange,
                   ),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildSourceButton(
+                    source: MoneySource.family,
+                    icon: Icons.family_restroom,
+                    label: 'Familiar',
+                    color: Colors.green,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               _selectedSource == MoneySource.work 
                   ? 'Este dinero proviene del trabajo y no debe gastarse innecesariamente'
-                  : 'Este es dinero personal disponible para gastos',
+                  : _selectedSource == MoneySource.family
+                      ? 'Este es dinero compartido para gastos familiares'
+                      : 'Este es dinero personal disponible para gastos',
               style: TextStyle(
                 fontSize: 12,
-                color: _selectedSource == MoneySource.work ? Colors.orange[700] : Colors.blue[700],
+                color: _selectedSource == MoneySource.work 
+                    ? Colors.orange[700] 
+                    : _selectedSource == MoneySource.family
+                        ? Colors.green[700]
+                        : Colors.blue[700],
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -431,10 +446,10 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Text(
-            'Cuenta',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+            Text(
+              'Cuenta',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           const SizedBox(height: 16),
           DropdownButtonFormField<int>(
             value: _selectedAccountId,
@@ -451,42 +466,51 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
               final bankColor = _getBankColor(account.bankType);
               return DropdownMenuItem(
                 value: account.id,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: bankColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          account.bankType.name.substring(0, 1).toUpperCase(),
-                          style: TextStyle(
-                            color: bankColor,
-                            fontWeight: FontWeight.bold,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: bankColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            account.bankType.name.substring(0, 1).toUpperCase(),
+                            style: TextStyle(
+                              color: bankColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(account.name),
-                          Text(
-                            currencyFormat.format(account.balance),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              account.name,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                            Text(
+                              currencyFormat.format(account.balance),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }).toList(),
@@ -496,7 +520,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
               });
             },
           ),
-        ],
+          ],
         ),
       ),
     );

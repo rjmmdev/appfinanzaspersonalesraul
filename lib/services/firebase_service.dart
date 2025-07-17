@@ -5,6 +5,7 @@ import '../models/account.dart';
 import '../models/transaction.dart' as app_models;
 import '../models/credit_card.dart';
 import '../models/daily_interest.dart';
+import '../models/daily_interest_record.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -20,7 +21,9 @@ class FirebaseService {
   static const String _transactionsCollection = 'transactions';
   static const String _creditCardsCollection = 'credit_cards';
   static const String _dailyInterestsCollection = 'daily_interests';
+  static const String _dailyInterestRecordsCollection = 'daily_interest_records';
   static const String _invoicesCollection = 'invoices';
+  static const String _systemMetadataCollection = 'system_metadata';
 
   // ========== ACCOUNTS ==========
   Future<List<Account>> getAccounts() async {
@@ -100,10 +103,19 @@ class FirebaseService {
 
   Future<void> deleteAccount(int id) async {
     try {
+      // Obtener el ID de Firebase
+      final firebaseId = _accountFirebaseIds[id];
+      if (firebaseId == null) {
+        throw Exception('No se encontró el ID de Firebase para la cuenta $id');
+      }
+      
       await _firestore
           .collection(_accountsCollection)
-          .doc(id.toString())
+          .doc(firebaseId)
           .delete();
+          
+      // Limpiar el mapa
+      _accountFirebaseIds.remove(id);
     } catch (e) {
       print('Error deleting account: $e');
       rethrow;
@@ -177,9 +189,15 @@ class FirebaseService {
 
   Future<void> updateTransaction(app_models.Transaction transaction) async {
     try {
+      // Obtener el ID de Firebase
+      final firebaseId = _transactionFirebaseIds[transaction.id!];
+      if (firebaseId == null) {
+        throw Exception('No se encontró el ID de Firebase para la transacción ${transaction.id}');
+      }
+      
       await _firestore
           .collection(_transactionsCollection)
-          .doc(transaction.id.toString())
+          .doc(firebaseId)
           .update(transaction.toMap()..remove('id'));
     } catch (e) {
       print('Error updating transaction: $e');
@@ -189,10 +207,19 @@ class FirebaseService {
 
   Future<void> deleteTransaction(int id) async {
     try {
+      // Obtener el ID de Firebase
+      final firebaseId = _transactionFirebaseIds[id];
+      if (firebaseId == null) {
+        throw Exception('No se encontró el ID de Firebase para la transacción $id');
+      }
+      
       await _firestore
           .collection(_transactionsCollection)
-          .doc(id.toString())
+          .doc(firebaseId)
           .delete();
+          
+      // Limpiar el mapa
+      _transactionFirebaseIds.remove(id);
     } catch (e) {
       print('Error deleting transaction: $e');
       rethrow;
@@ -204,12 +231,17 @@ class FirebaseService {
     try {
       final QuerySnapshot snapshot = await _firestore
           .collection(_creditCardsCollection)
-          .orderBy('createdAt', descending: false)
           .get();
+      
+      _creditCardFirebaseIds.clear();
       
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        data['id'] = int.tryParse(doc.id) ?? 0;
+        final numericId = doc.id.hashCode.abs();
+        data['id'] = numericId;
+        
+        _creditCardFirebaseIds[numericId] = doc.id;
+        
         return CreditCard.fromMap(data);
       }).toList();
     } catch (e) {
@@ -220,22 +252,13 @@ class FirebaseService {
 
   Future<CreditCard> insertCreditCard(CreditCard creditCard) async {
     try {
-      final docRef = await _firestore.collection(_creditCardsCollection).add(
-        creditCard.toMap()..remove('id'),
-      );
+      final data = creditCard.toMap()..remove('id');
+      final docRef = await _firestore.collection(_creditCardsCollection).add(data);
       
-      return CreditCard(
-        id: int.tryParse(docRef.id) ?? DateTime.now().millisecondsSinceEpoch,
-        name: creditCard.name,
-        bank: creditCard.bank,
-        creditLimit: creditCard.creditLimit,
-        currentBalance: creditCard.currentBalance,
-        availableCredit: creditCard.availableCredit,
-        cutoffDate: creditCard.cutoffDate,
-        paymentDueDate: creditCard.paymentDueDate,
-        createdAt: creditCard.createdAt,
-        updatedAt: creditCard.updatedAt,
-      );
+      final numericId = docRef.id.hashCode.abs();
+      _creditCardFirebaseIds[numericId] = docRef.id;
+      
+      return creditCard.copyWith(id: numericId);
     } catch (e) {
       print('Error inserting credit card: $e');
       rethrow;
@@ -244,9 +267,14 @@ class FirebaseService {
 
   Future<void> updateCreditCard(CreditCard creditCard) async {
     try {
+      final firebaseId = _creditCardFirebaseIds[creditCard.id!];
+      if (firebaseId == null) {
+        throw Exception('No se encontró el ID de Firebase para la tarjeta ${creditCard.id}');
+      }
+      
       await _firestore
           .collection(_creditCardsCollection)
-          .doc(creditCard.id.toString())
+          .doc(firebaseId)
           .update(creditCard.toMap()..remove('id'));
     } catch (e) {
       print('Error updating credit card: $e');
@@ -256,10 +284,17 @@ class FirebaseService {
 
   Future<void> deleteCreditCard(int id) async {
     try {
+      final firebaseId = _creditCardFirebaseIds[id];
+      if (firebaseId == null) {
+        throw Exception('No se encontró el ID de Firebase para la tarjeta $id');
+      }
+      
       await _firestore
           .collection(_creditCardsCollection)
-          .doc(id.toString())
+          .doc(firebaseId)
           .delete();
+          
+      _creditCardFirebaseIds.remove(id);
     } catch (e) {
       print('Error deleting credit card: $e');
       rethrow;
@@ -436,6 +471,208 @@ class FirebaseService {
     } catch (e) {
       print('Error initializing default data: $e');
       rethrow;
+    }
+  }
+
+  // ========== DAILY INTERESTS ==========
+  
+  // Verificar si ya se aplicaron intereses hoy
+  Future<bool> hasAppliedInterestsToday() async {
+    try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      
+      // Primero verificar el documento de metadatos
+      final metadataDoc = await _firestore
+          .collection(_systemMetadataCollection)
+          .doc('interest_calculation')
+          .get();
+      
+      if (metadataDoc.exists) {
+        final data = metadataDoc.data() as Map<String, dynamic>;
+        final lastCalculationStr = data['lastCalculationDate'] as String?;
+        
+        if (lastCalculationStr != null) {
+          final lastCalculation = DateTime.parse(lastCalculationStr);
+          final lastCalculationDate = DateTime(lastCalculation.year, lastCalculation.month, lastCalculation.day);
+          
+          // Si la última fecha de cálculo es hoy, ya se aplicaron
+          if (lastCalculationDate.isAtSameMomentAs(today)) {
+            print('FirebaseService: Interests already applied today (metadata check)');
+            return true;
+          }
+        }
+      }
+      
+      // Como respaldo, también verificar en los registros de interés
+      final startOfDay = today;
+      final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
+      
+      final query = await _firestore
+          .collection(_dailyInterestRecordsCollection)
+          .where('appliedDate', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+          .where('appliedDate', isLessThanOrEqualTo: endOfDay.toIso8601String())
+          .limit(1)
+          .get();
+      
+      final hasInterests = query.docs.isNotEmpty;
+      print('FirebaseService: Interests applied today? $hasInterests');
+      return hasInterests;
+    } catch (e) {
+      print('Error checking if interests applied today: $e');
+      // En caso de error, asumimos que ya se aplicaron para evitar duplicados
+      return true;
+    }
+  }
+  
+  Future<void> calculateAndApplyDailyInterests() async {
+    try {
+      print('FirebaseService: Starting daily interest calculation...');
+      
+      // Obtener todas las cuentas
+      final accounts = await getAccounts();
+      
+      // Filtrar solo las cuentas con tasa de interés mayor a 0
+      final accountsWithInterest = accounts.where((account) => 
+        account.annualInterestRate > 0 && account.balance > 0
+      ).toList();
+      
+      if (accountsWithInterest.isEmpty) {
+        print('FirebaseService: No accounts with interest found');
+        return;
+      }
+      
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      
+      // Procesar cada cuenta con interés
+      for (final account in accountsWithInterest) {
+        try {
+          // Usar una transacción de Firestore para verificar y aplicar de forma atómica
+          await _firestore.runTransaction((transaction) async {
+            // Verificar si ya existe un registro de interés para hoy
+            final startOfDay = DateTime(today.year, today.month, today.day);
+            final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
+            
+            final existingQuery = await _firestore
+                .collection(_dailyInterestRecordsCollection)
+                .where('accountId', isEqualTo: account.id)
+                .where('appliedDate', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+                .where('appliedDate', isLessThanOrEqualTo: endOfDay.toIso8601String())
+                .limit(1)
+                .get();
+            
+            if (existingQuery.docs.isNotEmpty) {
+              print('FirebaseService: Interest already applied today for account ${account.name}');
+              return;
+            }
+            
+            // Calcular el interés diario
+            final dailyInterest = account.calculateDailyInterest();
+            
+            if (dailyInterest <= 0) {
+              return;
+            }
+            
+            print('FirebaseService: Applying ${dailyInterest} interest to ${account.name}');
+            
+            // Crear registro de interés
+            final interestRecord = DailyInterestRecord(
+              accountId: account.id!,
+              interestAmount: dailyInterest,
+              balanceBeforeInterest: account.balance,
+              balanceAfterInterest: account.balance + dailyInterest,
+              appliedDate: today,
+              createdAt: now,
+            );
+            
+            // 1. Agregar el registro de interés
+            final interestDocRef = _firestore.collection(_dailyInterestRecordsCollection).doc();
+            transaction.set(interestDocRef, interestRecord.toMap());
+            
+            // 2. Actualizar el balance de la cuenta
+            final accountDocId = _accountFirebaseIds[account.id!];
+            if (accountDocId == null) {
+              throw Exception('No Firebase ID found for account ${account.id}');
+            }
+            
+            final accountDocRef = _firestore.collection(_accountsCollection).doc(accountDocId);
+            transaction.update(accountDocRef, {
+              'balance': interestRecord.balanceAfterInterest,
+              'updatedAt': DateTime.now().toIso8601String(),
+            });
+            
+            // 3. Crear una transacción de tipo ingreso por intereses
+            final transactionDocRef = _firestore.collection(_transactionsCollection).doc();
+            transaction.set(transactionDocRef, {
+              'accountId': account.id,
+              'description': 'Intereses diarios - ${account.name}',
+              'amount': interestRecord.interestAmount,
+              'subtotal': interestRecord.interestAmount,
+              'ivaAmount': 0,
+              'hasIva': 0,
+              'isDeductibleIva': 0,
+              'type': app_models.TransactionType.income.index,
+              'category': 'Intereses',
+              'source': app_models.MoneySource.personal.index,
+              'transactionDate': interestRecord.appliedDate.toIso8601String(),
+              'createdAt': DateTime.now().toIso8601String(),
+            });
+            
+            print('FirebaseService: Interest applied successfully to ${account.name}');
+          });
+          
+        } catch (e) {
+          print('Error applying interest to account ${account.name}: $e');
+          // Continuar con la siguiente cuenta
+        }
+      }
+      
+      print('FirebaseService: Daily interest calculation completed');
+      
+      // Actualizar la fecha de último cálculo en metadatos
+      await _updateLastInterestCalculationDate();
+    } catch (e) {
+      print('Error in calculateAndApplyDailyInterests: $e');
+      rethrow;
+    }
+  }
+  
+  // Actualizar la fecha de último cálculo de intereses
+  Future<void> _updateLastInterestCalculationDate() async {
+    try {
+      final now = DateTime.now();
+      await _firestore
+          .collection(_systemMetadataCollection)
+          .doc('interest_calculation')
+          .set({
+            'lastCalculationDate': now.toIso8601String(),
+            'lastCalculationTimestamp': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+      
+      print('FirebaseService: Updated last interest calculation date');
+    } catch (e) {
+      print('Error updating last interest calculation date: $e');
+    }
+  }
+  
+  // Método para obtener el historial de intereses
+  Future<List<DailyInterestRecord>> getInterestHistory(int accountId) async {
+    try {
+      final query = await _firestore
+          .collection(_dailyInterestRecordsCollection)
+          .where('accountId', isEqualTo: accountId)
+          .orderBy('appliedDate', descending: true)
+          .get();
+      
+      return query.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return DailyInterestRecord.fromMap(data);
+      }).toList();
+    } catch (e) {
+      print('Error getting interest history: $e');
+      return [];
     }
   }
 }
