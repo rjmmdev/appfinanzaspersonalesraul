@@ -148,7 +148,6 @@ class FirebaseService {
       transactionData['source'] = transaction.source.index;
       
       final docRef = await _firestore.collection(_transactionsCollection).add(transactionData);
-      final docRef = await _firestore.collection(_transactionsCollection).add(transactionData);
       
       return app_models.Transaction(
         id: docRef.id.hashCode, // Usar hash del ID para convertir a int
@@ -614,8 +613,6 @@ class FirebaseService {
             'lastCalculationDate': now.toIso8601String(),
             'lastCalculationTimestamp': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
-      
-      }
     } catch (e) {
       // ignore
     }
