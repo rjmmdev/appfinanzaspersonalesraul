@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "70543647275",
+    "project_id": "finanzaspersonalesraul",
+    "storage_bucket": "finanzaspersonalesraul.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70543647275:android:830957cdd6568b9110806e",
+        "android_client_info": {
+          "package_name": "com.raul.finanzas.finanzasraul"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzgRtMeLn46aAAote1iTpiaUXXq9LOvWM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
