@@ -422,6 +422,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   }
 
   Widget _buildCreditCardsSection(FinanceProvider provider) {
+    final creditCards = provider.creditCards;
+    final creditAccounts = provider.creditAccounts;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -433,10 +436,12 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            if (provider.creditCards.isEmpty)
+            if (creditCards.isEmpty && creditAccounts.isEmpty)
               const Text('No hay tarjetas disponibles')
-            else
-              ...provider.creditCards.map((card) => _buildCreditCardItem(card)),
+            else ...[
+              ...creditCards.map((card) => _buildCreditCardItem(card)),
+              ...creditAccounts.map((acc) => _buildCreditAccountItem(acc)),
+            ],
           ],
         ),
       ),
@@ -468,6 +473,38 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
       ),
       trailing: Text(
         currencyFormat.format(card.currentBalance),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildCreditAccountItem(Account account) {
+    final limit = account.creditLimit ?? 0;
+    final used = account.balance.abs();
+    final utilizationPercent = limit > 0 ? used / limit * 100 : 0.0;
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(
+        backgroundColor: _getBankColor(account.bankType),
+        child: const Icon(Icons.credit_card, color: Colors.white),
+      ),
+      title: Text(account.name),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Límite: ${currencyFormat.format(limit)}'),
+          LinearProgressIndicator(
+            value: utilizationPercent / 100,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(
+              utilizationPercent > 80 ? Colors.red : AppTheme.primaryColor,
+            ),
+          ),
+        ],
+      ),
+      trailing: Text(
+        currencyFormat.format(account.balance),
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
     );

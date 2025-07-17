@@ -17,6 +17,8 @@ class FinanceProvider extends ChangeNotifier {
   };
 
   List<Account> get accounts => _accounts;
+  List<Account> get creditAccounts =>
+      _accounts.where((a) => a.accountType == AccountType.credit).toList();
   List<Transaction> get transactions => _transactions;
   List<CreditCard> get creditCards => _creditCards;
   Map<String, double> get totalBalances => _totalBalances;
