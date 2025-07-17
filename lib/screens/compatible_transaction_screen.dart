@@ -481,6 +481,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                 return DropdownMenuItem(
                   value: account.id,
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         width: 36,
@@ -501,7 +502,8 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      Flexible(
+                        fit: FlexFit.loose,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
