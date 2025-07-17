@@ -120,6 +120,10 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
                 color: isCredit && account.balance < 0 ? Colors.red : null,
               ),
             ),
+            if (isCredit && account.creditLimit != null)
+              Text('Límite: ${currencyFormat.format(account.creditLimit)}'),
+            if (isCredit && account.cutoffDate != null)
+              Text('Corte: ${DateFormat('yyyy-MM-dd').format(account.cutoffDate!)}'),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -190,6 +194,8 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
     final nameController = TextEditingController();
     final balanceController = TextEditingController(text: '0');
     final rateController = TextEditingController(text: '0');
+    final creditLimitController = TextEditingController();
+    DateTime? selectedCutoffDate;
     BankType selectedBank = BankType.bbva;
     AccountType selectedAccountType = AccountType.debit;
 
@@ -302,14 +308,53 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
                 TextField(
                   controller: rateController,
                   decoration: InputDecoration(
-                    labelText: selectedAccountType == AccountType.credit 
-                        ? 'Tasa de interés anual (%)' 
+                    labelText: selectedAccountType == AccountType.credit
+                        ? 'Tasa de interés anual (%)'
                         : 'Tasa de rendimiento anual (%)',
                     border: const OutlineInputBorder(),
                     suffixText: '%',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
+                if (selectedAccountType == AccountType.credit) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: creditLimitController,
+                    decoration: const InputDecoration(
+                      labelText: 'Límite de crédito',
+                      border: OutlineInputBorder(),
+                      prefixText: '\$ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedCutoffDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          selectedCutoffDate = picked;
+                        });
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Fecha de corte',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        selectedCutoffDate != null
+                            ? DateFormat('yyyy-MM-dd').format(selectedCutoffDate!)
+                            : 'Selecciona una fecha',
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -329,6 +374,7 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
 
               final balance = double.tryParse(balanceController.text) ?? 0;
               final rate = double.tryParse(rateController.text) ?? 0;
+              final creditLimit = double.tryParse(creditLimitController.text);
 
               try {
                 await context.read<FinanceProvider>().addAccount(
@@ -337,6 +383,8 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
                   accountType: selectedAccountType,
                   initialBalance: balance,
                   annualInterestRate: rate,
+                  creditLimit: creditLimit,
+                  cutoffDate: selectedCutoffDate,
                 );
                 
                 if (mounted) {
@@ -469,6 +517,9 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
 
   void _showEditAccountDialog(Account account, FinanceProvider provider) {
     final nameController = TextEditingController(text: account.name);
+    final creditLimitController =
+        TextEditingController(text: account.creditLimit?.toString() ?? '');
+    DateTime? selectedCutoffDate = account.cutoffDate;
     BankType selectedBank = account.bankType;
     AccountType selectedAccountType = account.accountType;
 
@@ -559,6 +610,47 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
                     }
                   },
                 ),
+                if (selectedAccountType == AccountType.credit) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: creditLimitController,
+                    decoration: const InputDecoration(
+                      labelText: 'Límite de crédito',
+                      border: OutlineInputBorder(),
+                      prefixText: '\$ ',
+                    ),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedCutoffDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          selectedCutoffDate = picked;
+                        });
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Fecha de corte',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        selectedCutoffDate != null
+                            ? DateFormat('yyyy-MM-dd')
+                                .format(selectedCutoffDate!)
+                            : 'Selecciona una fecha',
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -582,6 +674,8 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
                     nameController.text.trim(),
                     selectedBank,
                     selectedAccountType,
+                    creditLimit: double.tryParse(creditLimitController.text),
+                    cutoffDate: selectedCutoffDate,
                   );
                   
                   if (mounted) {
