@@ -36,7 +36,6 @@ class TransactionProvider extends ChangeNotifier {
       await _storageService.init();
       _transactions = await _storageService.getTransactions();
     } catch (e) {
-      print('Error loading transactions: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -49,7 +48,6 @@ class TransactionProvider extends ChangeNotifier {
       _transactions.add(newTransaction);
       notifyListeners();
     } catch (e) {
-      print('Error adding transaction: $e');
       rethrow;
     }
   }
@@ -63,7 +61,6 @@ class TransactionProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error updating transaction: $e');
       rethrow;
     }
   }
@@ -74,7 +71,6 @@ class TransactionProvider extends ChangeNotifier {
       _transactions.removeWhere((transaction) => transaction.id == id);
       notifyListeners();
     } catch (e) {
-      print('Error deleting transaction: $e');
       rethrow;
     }
   }

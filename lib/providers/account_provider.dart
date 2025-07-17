@@ -22,7 +22,6 @@ class AccountProvider extends ChangeNotifier {
       await _storageService.init();
       _accounts = await _storageService.getAccounts();
     } catch (e) {
-      print('Error loading accounts: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -35,7 +34,6 @@ class AccountProvider extends ChangeNotifier {
       _accounts.add(newAccount);
       notifyListeners();
     } catch (e) {
-      print('Error adding account: $e');
       rethrow;
     }
   }
@@ -49,7 +47,6 @@ class AccountProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error updating account: $e');
       rethrow;
     }
   }
@@ -60,7 +57,6 @@ class AccountProvider extends ChangeNotifier {
       _accounts.removeWhere((account) => account.id == id);
       notifyListeners();
     } catch (e) {
-      print('Error deleting account: $e');
       rethrow;
     }
   }

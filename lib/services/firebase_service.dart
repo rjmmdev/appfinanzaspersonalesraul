@@ -28,19 +28,14 @@ class FirebaseService {
   // ========== ACCOUNTS ==========
   Future<List<Account>> getAccounts() async {
     try {
-      print('FirebaseService: Fetching accounts from Firestore...');
       final QuerySnapshot snapshot = await _firestore
           .collection(_accountsCollection)
           .get();
-      
-      print('FirebaseService: Found ${snapshot.docs.length} documents in accounts collection');
-      
+
       _accountFirebaseIds.clear(); // Limpiar el mapa antes de llenarlo
-      
+
       final accounts = snapshot.docs.map((doc) {
-        print('FirebaseService: Processing document ${doc.id}');
         final data = doc.data() as Map<String, dynamic>;
-        print('FirebaseService: Document data: $data');
         
         // Generar un ID numérico único basado en el timestamp
         final numericId = doc.id.hashCode.abs();
@@ -52,10 +47,8 @@ class FirebaseService {
         return Account.fromMap(data);
       }).toList();
       
-      print('FirebaseService: Successfully loaded ${accounts.length} accounts');
       return accounts;
     } catch (e) {
-      print('FirebaseService: Error getting accounts: $e');
       return [];
     }
   }
@@ -77,7 +70,6 @@ class FirebaseService {
       // Devolver la cuenta con el ID numérico
       return account.copyWith(id: numericId);
     } catch (e) {
-      print('Error inserting account: $e');
       rethrow;
     }
   }
@@ -96,7 +88,6 @@ class FirebaseService {
           .doc(firebaseId)
           .update(account.toMap()..remove('id'));
     } catch (e) {
-      print('Error updating account: $e');
       rethrow;
     }
   }
@@ -117,7 +108,6 @@ class FirebaseService {
       // Limpiar el mapa
       _accountFirebaseIds.remove(id);
     } catch (e) {
-      print('Error deleting account: $e');
       rethrow;
     }
   }
@@ -141,7 +131,6 @@ class FirebaseService {
         return app_models.Transaction.fromMap(data);
       }).toList();
     } catch (e) {
-      print('Error getting transactions: $e');
       return [];
     }
   }
@@ -158,11 +147,8 @@ class FirebaseService {
       transactionData['isDeductibleIva'] = transaction.isDeductibleIva ? 1 : 0;
       transactionData['source'] = transaction.source.index;
       
-      print('Inserting transaction data: $transactionData');
-      
       final docRef = await _firestore.collection(_transactionsCollection).add(transactionData);
-      
-      print('Transaction inserted with document ID: ${docRef.id}');
+      final docRef = await _firestore.collection(_transactionsCollection).add(transactionData);
       
       return app_models.Transaction(
         id: docRef.id.hashCode, // Usar hash del ID para convertir a int
@@ -182,7 +168,6 @@ class FirebaseService {
         createdAt: transaction.createdAt,
       );
     } catch (e) {
-      print('Error inserting transaction: $e');
       rethrow;
     }
   }
@@ -200,7 +185,6 @@ class FirebaseService {
           .doc(firebaseId)
           .update(transaction.toMap()..remove('id'));
     } catch (e) {
-      print('Error updating transaction: $e');
       rethrow;
     }
   }
@@ -221,7 +205,6 @@ class FirebaseService {
       // Limpiar el mapa
       _transactionFirebaseIds.remove(id);
     } catch (e) {
-      print('Error deleting transaction: $e');
       rethrow;
     }
   }
@@ -245,7 +228,6 @@ class FirebaseService {
         return CreditCard.fromMap(data);
       }).toList();
     } catch (e) {
-      print('Error getting credit cards: $e');
       return [];
     }
   }
@@ -260,7 +242,6 @@ class FirebaseService {
       
       return creditCard.copyWith(id: numericId);
     } catch (e) {
-      print('Error inserting credit card: $e');
       rethrow;
     }
   }
@@ -277,7 +258,6 @@ class FirebaseService {
           .doc(firebaseId)
           .update(creditCard.toMap()..remove('id'));
     } catch (e) {
-      print('Error updating credit card: $e');
       rethrow;
     }
   }
@@ -296,7 +276,6 @@ class FirebaseService {
           
       _creditCardFirebaseIds.remove(id);
     } catch (e) {
-      print('Error deleting credit card: $e');
       rethrow;
     }
   }
@@ -319,7 +298,6 @@ class FirebaseService {
         'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('Error inserting daily interest: $e');
       rethrow;
     }
   }
@@ -337,7 +315,6 @@ class FirebaseService {
         return DailyInterest.fromMap(data);
       }).toList();
     } catch (e) {
-      print('Error getting daily interests: $e');
       return [];
     }
   }
@@ -368,7 +345,6 @@ class FirebaseService {
       
       return downloadUrl;
     } catch (e) {
-      print('Error uploading invoice: $e');
       rethrow;
     }
   }
@@ -387,7 +363,6 @@ class FirebaseService {
         return data;
       }).toList();
     } catch (e) {
-      print('Error getting invoices: $e');
       return [];
     }
   }
@@ -400,7 +375,6 @@ class FirebaseService {
       // Eliminar de Firestore
       await _firestore.collection(_invoicesCollection).doc(invoiceId).delete();
     } catch (e) {
-      print('Error deleting invoice: $e');
       rethrow;
     }
   }
@@ -469,7 +443,6 @@ class FirebaseService {
 
       await batch.commit();
     } catch (e) {
-      print('Error initializing default data: $e');
       rethrow;
     }
   }
@@ -498,7 +471,6 @@ class FirebaseService {
           
           // Si la última fecha de cálculo es hoy, ya se aplicaron
           if (lastCalculationDate.isAtSameMomentAs(today)) {
-            print('FirebaseService: Interests already applied today (metadata check)');
             return true;
           }
         }
@@ -516,10 +488,8 @@ class FirebaseService {
           .get();
       
       final hasInterests = query.docs.isNotEmpty;
-      print('FirebaseService: Interests applied today? $hasInterests');
       return hasInterests;
     } catch (e) {
-      print('Error checking if interests applied today: $e');
       // En caso de error, asumimos que ya se aplicaron para evitar duplicados
       return true;
     }
@@ -527,7 +497,6 @@ class FirebaseService {
   
   Future<void> calculateAndApplyDailyInterests() async {
     try {
-      print('FirebaseService: Starting daily interest calculation...');
       
       // Obtener todas las cuentas
       final accounts = await getAccounts();
@@ -541,7 +510,6 @@ class FirebaseService {
       ).toList();
       
       if (accountsWithInterest.isEmpty) {
-        print('FirebaseService: No accounts with interest found');
         return;
       }
       
@@ -566,7 +534,6 @@ class FirebaseService {
                 .get();
             
             if (existingQuery.docs.isNotEmpty) {
-              print('FirebaseService: Interest already applied today for account ${account.name}');
               return;
             }
             
@@ -577,7 +544,6 @@ class FirebaseService {
               return;
             }
             
-            print('FirebaseService: Applying ${dailyInterest} interest to ${account.name}');
             
             // Crear registro de interés
             final interestRecord = DailyInterestRecord(
@@ -622,21 +588,17 @@ class FirebaseService {
               'createdAt': DateTime.now().toIso8601String(),
             });
             
-            print('FirebaseService: Interest applied successfully to ${account.name}');
           });
-          
+
         } catch (e) {
-          print('Error applying interest to account ${account.name}: $e');
           // Continuar con la siguiente cuenta
         }
       }
-      
-      print('FirebaseService: Daily interest calculation completed');
+
       
       // Actualizar la fecha de último cálculo en metadatos
       await _updateLastInterestCalculationDate();
     } catch (e) {
-      print('Error in calculateAndApplyDailyInterests: $e');
       rethrow;
     }
   }
@@ -653,9 +615,9 @@ class FirebaseService {
             'lastCalculationTimestamp': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
       
-      print('FirebaseService: Updated last interest calculation date');
+      }
     } catch (e) {
-      print('Error updating last interest calculation date: $e');
+      // ignore
     }
   }
   
@@ -674,7 +636,6 @@ class FirebaseService {
         return DailyInterestRecord.fromMap(data);
       }).toList();
     } catch (e) {
-      print('Error getting interest history: $e');
       return [];
     }
   }
