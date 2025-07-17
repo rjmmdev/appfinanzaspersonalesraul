@@ -253,6 +253,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (transaction.isDeductibleIva)
@@ -288,13 +289,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          account.name,
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 12,
-                          ),
+                    Expanded(
+                      child: Text(
+                        account.name,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                         const SizedBox(width: 16),
                         Text(
                           dateFormat.format(transaction.transactionDate),
@@ -313,6 +317,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                           color: AppTheme.textTertiary,
                           fontSize: 11,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                     if (transaction.hasIva && transaction.ivaAmount > 0) ...[
