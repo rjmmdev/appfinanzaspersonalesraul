@@ -8,6 +8,7 @@ import 'accounts_screen.dart';
 import 'transactions_screen.dart';
 import 'compatible_transaction_screen.dart';
 import 'cfdi_guide_screen.dart';
+import 'deductible_search_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -374,6 +375,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const CFDIGuideScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildActionButton(
+                  icon: Icons.search,
+                  label: 'Buscador IVA',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DeductibleSearchScreen(),
                       ),
                     );
                   },
