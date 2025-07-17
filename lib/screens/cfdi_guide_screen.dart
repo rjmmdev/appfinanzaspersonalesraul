@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'deductible_search_screen.dart';
 
 class CFDIGuideScreen extends StatelessWidget {
   const CFDIGuideScreen({super.key});
@@ -13,6 +14,19 @@ class CFDIGuideScreen extends StatelessWidget {
             expandedHeight: 200,
             floating: false,
             pinned: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DeductibleSearchScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               title: const Text(
                 'Guía de CFDI para RESICO',
