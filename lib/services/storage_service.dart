@@ -40,6 +40,8 @@ class StorageService {
       accountType: account.accountType,
       balance: account.balance,
       annualInterestRate: account.annualInterestRate,
+      creditLimit: account.creditLimit,
+      cutoffDate: account.cutoffDate,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
     );

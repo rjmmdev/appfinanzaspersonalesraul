@@ -94,6 +94,8 @@ class FinanceProvider extends ChangeNotifier {
     required AccountType accountType,
     required double initialBalance,
     required double annualInterestRate,
+    double? creditLimit,
+    DateTime? cutoffDate,
   }) async {
     final now = DateTime.now();
     final account = Account(
@@ -102,6 +104,8 @@ class FinanceProvider extends ChangeNotifier {
       accountType: accountType,
       balance: initialBalance,
       annualInterestRate: annualInterestRate,
+      creditLimit: creditLimit,
+      cutoffDate: cutoffDate,
       createdAt: now,
       updatedAt: now,
     );
@@ -330,13 +334,22 @@ class FinanceProvider extends ChangeNotifier {
     await loadData();
   }
 
-  Future<void> updateAccount(int accountId, String name, BankType bankType, AccountType accountType) async {
+  Future<void> updateAccount(
+    int accountId,
+    String name,
+    BankType bankType,
+    AccountType accountType, {
+    double? creditLimit,
+    DateTime? cutoffDate,
+  }) async {
     final account = _accounts.firstWhere((a) => a.id == accountId);
     
     await _firebaseService.updateAccount(account.copyWith(
       name: name,
       bankType: bankType,
       accountType: accountType,
+      creditLimit: creditLimit,
+      cutoffDate: cutoffDate,
       updatedAt: DateTime.now(),
     ));
     

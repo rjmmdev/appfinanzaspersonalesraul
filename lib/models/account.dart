@@ -12,6 +12,8 @@ class Account {
   final AccountType accountType;
   final double balance;
   final double annualInterestRate;
+  final double? creditLimit;
+  final DateTime? cutoffDate;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -22,6 +24,8 @@ class Account {
     required this.accountType,
     required this.balance,
     required this.annualInterestRate,
+    this.creditLimit,
+    this.cutoffDate,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -34,6 +38,8 @@ class Account {
       'accountType': accountType.index,
       'balance': balance,
       'annualInterestRate': annualInterestRate,
+      'creditLimit': creditLimit,
+      'cutoffDate': cutoffDate?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -49,6 +55,8 @@ class Account {
           : AccountType.debit, // Default to debit for backward compatibility
       balance: map['balance'].toDouble(),
       annualInterestRate: map['annualInterestRate']?.toDouble() ?? 0,
+      creditLimit: map['creditLimit'] != null ? (map['creditLimit'] as num).toDouble() : null,
+      cutoffDate: map['cutoffDate'] != null ? DateTime.parse(map['cutoffDate']) : null,
       createdAt: DateTime.parse(map['createdAt']),
       updatedAt: DateTime.parse(map['updatedAt']),
     );
@@ -61,6 +69,8 @@ class Account {
     AccountType? accountType,
     double? balance,
     double? annualInterestRate,
+    double? creditLimit,
+    DateTime? cutoffDate,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -71,6 +81,8 @@ class Account {
       accountType: accountType ?? this.accountType,
       balance: balance ?? this.balance,
       annualInterestRate: annualInterestRate ?? this.annualInterestRate,
+      creditLimit: creditLimit ?? this.creditLimit,
+      cutoffDate: cutoffDate ?? this.cutoffDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
