@@ -46,22 +46,21 @@ class AppTheme {
   );
 
   static ThemeData lightTheme() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: primaryColor,
+      brightness: Brightness.light,
+    ).copyWith(
+      secondary: secondaryColor,
+      tertiary: accentColor,
+      surface: surfaceColor,
+      error: errorColor,
+    );
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      colorScheme: colorScheme,
       primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
-      
-      colorScheme: const ColorScheme.light(
-        primary: primaryColor,
-        secondary: secondaryColor,
-        tertiary: accentColor,
-        surface: surfaceColor,
-        error: errorColor,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onSurface: textPrimary,
-      ),
       
       // AppBar Theme
       appBarTheme: const AppBarTheme(

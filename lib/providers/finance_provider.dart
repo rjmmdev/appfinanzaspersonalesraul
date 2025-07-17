@@ -22,23 +22,19 @@ class FinanceProvider extends ChangeNotifier {
   Map<String, double> get totalBalances => _totalBalances;
 
   Future<void> loadData() async {
-    await loadAccounts();
-    await loadTransactions();
-    await loadCreditCards();
+    await Future.wait([
+      loadAccounts(),
+      loadTransactions(),
+      loadCreditCards(),
+    ]);
     await updateTotalBalances();
   }
 
   Future<void> loadAccounts() async {
     try {
-      print('FinanceProvider: Loading accounts from Firebase...');
       _accounts = await _firebaseService.getAccounts();
-      print('FinanceProvider: Loaded ${_accounts.length} accounts from Firebase');
-      for (var account in _accounts) {
-        print('  - Account: ${account.name} (${account.bankType}) - Balance: ${account.balance}');
-      }
       notifyListeners();
     } catch (e) {
-      print('FinanceProvider: Error loading accounts from Firebase: $e');
       _accounts = [];
       notifyListeners();
     }
@@ -49,7 +45,6 @@ class FinanceProvider extends ChangeNotifier {
       _transactions = await _firebaseService.getTransactions();
       notifyListeners();
     } catch (e) {
-      print('Error loading transactions from Firebase: $e');
       _transactions = [];
       notifyListeners();
     }
@@ -60,7 +55,6 @@ class FinanceProvider extends ChangeNotifier {
       _creditCards = await _firebaseService.getCreditCards();
       notifyListeners();
     } catch (e) {
-      print('Error loading credit cards from Firebase: $e');
       _creditCards = [];
       notifyListeners();
     }
@@ -208,8 +202,6 @@ class FinanceProvider extends ChangeNotifier {
 
   Future<void> updateTransactionInvoices(int transactionId, List<String> invoiceUrls) async {
     try {
-      print('Updating transaction $transactionId with invoice URLs: $invoiceUrls');
-      
       final transaction = _transactions.firstWhere(
         (t) => t.id == transactionId,
         orElse: () => throw Exception('Transaction not found with ID: $transactionId'),
@@ -220,11 +212,9 @@ class FinanceProvider extends ChangeNotifier {
       );
       
       await _firebaseService.updateTransaction(updatedTransaction);
-      print('Transaction updated successfully with ${invoiceUrls.length} invoice URLs');
-      
+
       await loadData();
     } catch (e) {
-      print('Error updating transaction invoices: $e');
       rethrow;
     }
   }
@@ -377,27 +367,20 @@ class FinanceProvider extends ChangeNotifier {
 
   Future<void> checkAndApplyDailyInterests() async {
     try {
-      print('FinanceProvider: Checking if daily interests need to be applied...');
-      
       // Verificar si ya se aplicaron intereses hoy
       final hasAppliedToday = await _firebaseService.hasAppliedInterestsToday();
-      
+
       if (hasAppliedToday) {
-        print('FinanceProvider: Daily interests already applied today');
         return;
       }
-      
-      print('FinanceProvider: Daily interests not applied today, applying now...');
-      
+
       // Aplicar intereses diarios
       await _firebaseService.calculateAndApplyDailyInterests();
-      
+
       // Recargar datos para reflejar los nuevos balances
       await loadData();
-      
-      print('FinanceProvider: Daily interests applied successfully');
     } catch (e) {
-      print('Error checking/applying daily interests: $e');
+      // Ignore errors silently
     }
   }
 

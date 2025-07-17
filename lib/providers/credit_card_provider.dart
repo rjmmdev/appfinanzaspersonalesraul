@@ -30,7 +30,6 @@ class CreditCardProvider extends ChangeNotifier {
       await _storageService.init();
       _creditCards = await _storageService.getCreditCards();
     } catch (e) {
-      print('Error loading credit cards: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -43,7 +42,6 @@ class CreditCardProvider extends ChangeNotifier {
       _creditCards.add(newCard);
       notifyListeners();
     } catch (e) {
-      print('Error adding credit card: $e');
       rethrow;
     }
   }
@@ -57,7 +55,6 @@ class CreditCardProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error updating credit card: $e');
       rethrow;
     }
   }
@@ -68,7 +65,6 @@ class CreditCardProvider extends ChangeNotifier {
       _creditCards.removeWhere((card) => card.id == id);
       notifyListeners();
     } catch (e) {
-      print('Error deleting credit card: $e');
       rethrow;
     }
   }
