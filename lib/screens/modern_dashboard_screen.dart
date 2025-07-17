@@ -10,6 +10,7 @@ import 'modern_accounts_screen.dart';
 import 'transactions_screen.dart';
 import 'compatible_transaction_screen.dart';
 import 'invoices_screen.dart';
+import 'cfdi_guide_screen.dart';
 
 class ModernDashboardScreen extends StatefulWidget {
   const ModernDashboardScreen({super.key});
@@ -570,6 +571,14 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const InvoicesScreen()),
+                  ),
+                ),
+                _buildActionButton(
+                  'Guía CFDI',
+                  Icons.help_outline,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CFDIGuideScreen()),
                   ),
                 ),
               ],
