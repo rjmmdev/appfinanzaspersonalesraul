@@ -18,11 +18,7 @@ class ModernAddTransactionScreenV2 extends StatefulWidget {
   State<ModernAddTransactionScreenV2> createState() => _ModernAddTransactionScreenV2State();
 }
 
-class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScreenV2> 
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  
+class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScreenV2> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
@@ -77,20 +73,10 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-    _animationController.forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _descriptionController.dispose();
     _amountController.dispose();
     _descriptionFocusNode.dispose();
@@ -105,41 +91,36 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Column(
+        child: Column(
             children: [
               _buildHeader(),
               Expanded(
                 child: Form(
                   key: _formKey,
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                  child: ListView(
+                    physics: const ClampingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildAmountSection(),
+                      const SizedBox(height: 24),
+                      _buildTransactionTypeSelector(),
+                      const SizedBox(height: 20),
+                      _buildSourceSelector(),
+                      const SizedBox(height: 20),
+                      _buildAccountSelector(provider),
+                      const SizedBox(height: 20),
+                      _buildDescriptionField(),
+                      const SizedBox(height: 20),
+                      _buildCategorySelector(),
+                      const SizedBox(height: 20),
+                      _buildDateSelector(),
+                      if (_selectedType == TransactionType.expense) ...[
                         const SizedBox(height: 20),
-                        _buildAmountSection(),
-                        const SizedBox(height: 24),
-                        _buildTransactionTypeSelector(),
-                        const SizedBox(height: 20),
-                        _buildSourceSelector(),
-                        const SizedBox(height: 20),
-                        _buildAccountSelector(provider),
-                        const SizedBox(height: 20),
-                        _buildDescriptionField(),
-                        const SizedBox(height: 20),
-                        _buildCategorySelector(),
-                        const SizedBox(height: 20),
-                        _buildDateSelector(),
-                        if (_selectedType == TransactionType.expense) ...[
-                          const SizedBox(height: 20),
-                          _buildIVASection(),
-                        ],
-                        const SizedBox(height: 40),
+                        _buildIVASection(),
                       ],
-                    ),
+                      const SizedBox(height: 40),
+                    ],
                   ),
                 ),
               ),
@@ -158,9 +139,9 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -191,12 +172,12 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -206,16 +187,15 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
             controller: _amountController,
             focusNode: _amountFocusNode,
             style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -1,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
             decoration: const InputDecoration(
               prefixText: '\$ ',
               prefixStyle: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w300,
+                fontSize: 24,
+                fontWeight: FontWeight.w400,
                 color: Colors.grey,
               ),
               hintText: '0.00',
@@ -347,7 +327,7 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
     final isSelected = _selectedType == type;
     
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
         color: isSelected ? Colors.white : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
@@ -453,7 +433,7 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
     final isSelected = _selectedSource == source;
     
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 150),
       child: InkWell(
         onTap: () => setState(() => _selectedSource = source),
         borderRadius: BorderRadius.circular(12),
@@ -655,7 +635,7 @@ class _ModernAddTransactionScreenV2State extends State<ModernAddTransactionScree
               onTap: () => setState(() => _selectedCategory = category),
               borderRadius: BorderRadius.circular(20),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected 

@@ -77,6 +77,8 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
   }
 
   Widget _buildAccountCard(Account account, FinanceProvider provider) {
+    final isCredit = account.accountType == AccountType.credit;
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -87,12 +89,37 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
-        title: Text(account.name),
+        title: Row(
+          children: [
+            Text(account.name),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: isCredit ? Colors.red[100] : Colors.green[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                isCredit ? 'Crédito' : 'Débito',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isCredit ? Colors.red[700] : Colors.green[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Tasa: ${account.annualInterestRate}% anual'),
-            Text('Balance: ${currencyFormat.format(account.balance)}'),
+            Text('Tasa: ${account.annualInterestRate}% ${isCredit ? "interés" : "rendimiento"} anual'),
+            Text(
+              '${isCredit ? "Saldo: " : "Balance: "}${currencyFormat.format(account.balance)}',
+              style: TextStyle(
+                color: isCredit && account.balance < 0 ? Colors.red : null,
+              ),
+            ),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -164,73 +191,128 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
     final balanceController = TextEditingController(text: '0');
     final rateController = TextEditingController(text: '0');
     BankType selectedBank = BankType.bbva;
+    AccountType selectedAccountType = AccountType.debit;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Agregar Cuenta'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre de la cuenta',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<BankType>(
-              value: selectedBank,
-              decoration: const InputDecoration(
-                labelText: 'Banco',
-                border: OutlineInputBorder(),
-              ),
-              items: BankType.values.map((bank) {
-                return DropdownMenuItem(
-                  value: bank,
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: _getBankColor(bank),
-                        child: Text(
-                          bank.name.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(bank.name.toUpperCase()),
-                    ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Agregar Cuenta'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre de la cuenta',
+                    border: OutlineInputBorder(),
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) selectedBank = value;
-              },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<AccountType>(
+                  value: selectedAccountType,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo de cuenta',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: AccountType.debit,
+                      child: Row(
+                        children: [
+                          Icon(Icons.account_balance_wallet, color: Colors.green[700], size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Débito'),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: AccountType.credit,
+                      child: Row(
+                        children: [
+                          Icon(Icons.credit_card, color: Colors.red[700], size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Crédito'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedAccountType = value;
+                        // Si es crédito, el balance inicial es negativo (deuda)
+                        if (value == AccountType.credit && double.tryParse(balanceController.text) != null) {
+                          final currentValue = double.parse(balanceController.text);
+                          if (currentValue > 0) {
+                            balanceController.text = (-currentValue).toString();
+                          }
+                        }
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<BankType>(
+                  value: selectedBank,
+                  decoration: const InputDecoration(
+                    labelText: 'Banco',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: BankType.values.map((bank) {
+                    return DropdownMenuItem(
+                      value: bank,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: _getBankColor(bank),
+                            child: Text(
+                              bank.name.substring(0, 1).toUpperCase(),
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(bank.name.toUpperCase()),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) selectedBank = value;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: balanceController,
+                  decoration: InputDecoration(
+                    labelText: selectedAccountType == AccountType.credit 
+                        ? 'Saldo actual (deuda)' 
+                        : 'Balance inicial',
+                    border: const OutlineInputBorder(),
+                    prefixText: '\$ ',
+                    helperText: selectedAccountType == AccountType.credit 
+                        ? 'Ingresa el saldo como número negativo si es deuda' 
+                        : null,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: rateController,
+                  decoration: InputDecoration(
+                    labelText: selectedAccountType == AccountType.credit 
+                        ? 'Tasa de interés anual (%)' 
+                        : 'Tasa de rendimiento anual (%)',
+                    border: const OutlineInputBorder(),
+                    suffixText: '%',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: balanceController,
-              decoration: const InputDecoration(
-                labelText: 'Balance inicial',
-                border: OutlineInputBorder(),
-                prefixText: '\$ ',
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: rateController,
-              decoration: const InputDecoration(
-                labelText: 'Tasa de interés anual (%)',
-                border: OutlineInputBorder(),
-                suffixText: '%',
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ],
-        ),
+          ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -252,6 +334,7 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
                 await context.read<FinanceProvider>().addAccount(
                   name: nameController.text.trim(),
                   bankType: selectedBank,
+                  accountType: selectedAccountType,
                   initialBalance: balance,
                   annualInterestRate: rate,
                 );
@@ -274,7 +357,8 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   void _showEditBalanceDialog(Account account, FinanceProvider provider) {
@@ -386,57 +470,97 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
   void _showEditAccountDialog(Account account, FinanceProvider provider) {
     final nameController = TextEditingController(text: account.name);
     BankType selectedBank = account.bankType;
+    AccountType selectedAccountType = account.accountType;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('Editar Cuenta'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre de la cuenta',
-                  border: OutlineInputBorder(),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre de la cuenta',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<BankType>(
-                value: selectedBank,
-                decoration: const InputDecoration(
-                  labelText: 'Banco',
-                  border: OutlineInputBorder(),
-                ),
-                items: BankType.values.map((bank) {
-                  return DropdownMenuItem(
-                    value: bank,
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: _getBankColor(bank),
-                          child: Text(
-                            bank.name.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(bank.name.toUpperCase()),
-                      ],
+                const SizedBox(height: 16),
+                DropdownButtonFormField<AccountType>(
+                  value: selectedAccountType,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo de cuenta',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: AccountType.debit,
+                      child: Row(
+                        children: [
+                          Icon(Icons.account_balance_wallet, color: Colors.green[700], size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Débito'),
+                        ],
+                      ),
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      selectedBank = value;
-                    });
-                  }
-                },
-              ),
-            ],
+                    DropdownMenuItem(
+                      value: AccountType.credit,
+                      child: Row(
+                        children: [
+                          Icon(Icons.credit_card, color: Colors.red[700], size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Crédito'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedAccountType = value;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<BankType>(
+                  value: selectedBank,
+                  decoration: const InputDecoration(
+                    labelText: 'Banco',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: BankType.values.map((bank) {
+                    return DropdownMenuItem(
+                      value: bank,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: _getBankColor(bank),
+                            child: Text(
+                              bank.name.substring(0, 1).toUpperCase(),
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(bank.name.toUpperCase()),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedBank = value;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -457,6 +581,7 @@ class _ModernAccountsScreenState extends State<ModernAccountsScreen> {
                     account.id!,
                     nameController.text.trim(),
                     selectedBank,
+                    selectedAccountType,
                   );
                   
                   if (mounted) {

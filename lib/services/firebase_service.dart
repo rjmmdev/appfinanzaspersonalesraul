@@ -532,9 +532,12 @@ class FirebaseService {
       // Obtener todas las cuentas
       final accounts = await getAccounts();
       
-      // Filtrar solo las cuentas con tasa de interés mayor a 0
+      // Filtrar solo las cuentas de débito con tasa de interés mayor a 0
+      // Las cuentas de crédito no generan rendimientos positivos
       final accountsWithInterest = accounts.where((account) => 
-        account.annualInterestRate > 0 && account.balance > 0
+        account.accountType == AccountType.debit &&
+        account.annualInterestRate > 0 && 
+        account.balance > 0
       ).toList();
       
       if (accountsWithInterest.isEmpty) {

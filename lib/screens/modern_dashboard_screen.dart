@@ -8,7 +8,7 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import 'modern_accounts_screen.dart';
 import 'transactions_screen.dart';
-import 'modern_add_transaction_screen_v2.dart';
+import 'compatible_transaction_screen.dart';
 import 'invoices_screen.dart';
 
 class ModernDashboardScreen extends StatefulWidget {
@@ -59,7 +59,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const ModernAddTransactionScreenV2(),
+              builder: (context) => const CompatibleTransactionScreen(),
             ),
           );
         },
@@ -307,6 +307,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
       'family': 0,
       'total': 0,
     };
+    final isCredit = account.accountType == AccountType.credit;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -333,12 +334,32 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      account.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                    Row(
+                      children: [
+                        Text(
+                          account.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: isCredit ? Colors.red[50] : Colors.green[50],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            isCredit ? 'Crédito' : 'Débito',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isCredit ? Colors.red[600] : Colors.green[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
-                      '${account.annualInterestRate}% anual',
+                      '${account.annualInterestRate}% ${isCredit ? "interés" : "rendimiento"} anual',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
@@ -346,7 +367,11 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               ),
               Text(
                 currencyFormat.format(account.balance),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 18,
+                  color: isCredit && account.balance < 0 ? Colors.red : null,
+                ),
               ),
             ],
           ),
@@ -517,12 +542,12 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: color?.withValues(alpha: 0.1) ?? Colors.grey[50],
+        backgroundColor: color?.withOpacity(0.1) ?? Colors.grey[50],
         foregroundColor: color ?? Colors.black87,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: color?.withValues(alpha: 0.3) ?? Colors.grey[300]!),
+          side: BorderSide(color: color?.withOpacity(0.3) ?? Colors.grey[300]!),
         ),
       ),
       child: Row(
@@ -607,7 +632,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: sourceColor.withValues(alpha: 0.1),
+                        color: sourceColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -659,6 +684,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                             orElse: () => Account(
                               name: 'Cuenta eliminada',
                               bankType: BankType.bbva,
+                              accountType: AccountType.debit,
                               balance: 0,
                               annualInterestRate: 0,
                               createdAt: DateTime.now(),
@@ -671,8 +697,8 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: transaction.type == TransactionType.income
-                                    ? AppTheme.successColor.withValues(alpha: 0.1)
-                                    : AppTheme.errorColor.withValues(alpha: 0.1),
+                                    ? AppTheme.successColor.withOpacity(0.1)
+                                    : AppTheme.errorColor.withOpacity(0.1),
                                 child: Icon(
                                   transaction.type == TransactionType.income
                                       ? Icons.arrow_downward

@@ -67,8 +67,24 @@ class FinanceProvider extends ChangeNotifier {
   }
 
   Future<void> updateTotalBalances() async {
-    double totalInAccounts = _accounts.fold(0, (sum, account) => sum + account.balance);
-    double totalDebt = _creditCards.fold(0, (sum, card) => sum + card.currentBalance);
+    double totalInAccounts = 0;
+    double totalCreditDebt = 0;
+    
+    // Separar cuentas de débito y crédito
+    for (final account in _accounts) {
+      if (account.accountType == AccountType.debit) {
+        totalInAccounts += account.balance;
+      } else if (account.accountType == AccountType.credit) {
+        // Las cuentas de crédito con balance negativo son deudas
+        if (account.balance < 0) {
+          totalCreditDebt += -account.balance; // Convertir a positivo para sumar a deudas
+        }
+      }
+    }
+    
+    // Agregar deudas de tarjetas de crédito
+    double totalCreditCardDebt = _creditCards.fold(0, (sum, card) => sum + card.currentBalance);
+    double totalDebt = totalCreditDebt + totalCreditCardDebt;
     
     _totalBalances = {
       'totalInAccounts': totalInAccounts,
@@ -81,6 +97,7 @@ class FinanceProvider extends ChangeNotifier {
   Future<void> addAccount({
     required String name,
     required BankType bankType,
+    required AccountType accountType,
     required double initialBalance,
     required double annualInterestRate,
   }) async {
@@ -88,6 +105,7 @@ class FinanceProvider extends ChangeNotifier {
     final account = Account(
       name: name,
       bankType: bankType,
+      accountType: accountType,
       balance: initialBalance,
       annualInterestRate: annualInterestRate,
       createdAt: now,
@@ -322,12 +340,13 @@ class FinanceProvider extends ChangeNotifier {
     await loadData();
   }
 
-  Future<void> updateAccount(int accountId, String name, BankType bankType) async {
+  Future<void> updateAccount(int accountId, String name, BankType bankType, AccountType accountType) async {
     final account = _accounts.firstWhere((a) => a.id == accountId);
     
     await _firebaseService.updateAccount(account.copyWith(
       name: name,
       bankType: bankType,
+      accountType: accountType,
       updatedAt: DateTime.now(),
     ));
     

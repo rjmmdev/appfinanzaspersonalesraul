@@ -2,11 +2,14 @@ import 'package:flutter/foundation.dart';
 
 enum BankType { bbva, mercadoPago, nu, didi }
 
+enum AccountType { debit, credit }
+
 @immutable
 class Account {
   final int? id;
   final String name;
   final BankType bankType;
+  final AccountType accountType;
   final double balance;
   final double annualInterestRate;
   final DateTime createdAt;
@@ -16,6 +19,7 @@ class Account {
     this.id,
     required this.name,
     required this.bankType,
+    required this.accountType,
     required this.balance,
     required this.annualInterestRate,
     required this.createdAt,
@@ -27,6 +31,7 @@ class Account {
       'id': id,
       'name': name,
       'bankType': bankType.index,
+      'accountType': accountType.index,
       'balance': balance,
       'annualInterestRate': annualInterestRate,
       'createdAt': createdAt.toIso8601String(),
@@ -39,6 +44,9 @@ class Account {
       id: map['id'],
       name: map['name'],
       bankType: BankType.values[map['bankType']],
+      accountType: map['accountType'] != null 
+          ? AccountType.values[map['accountType']] 
+          : AccountType.debit, // Default to debit for backward compatibility
       balance: map['balance'].toDouble(),
       annualInterestRate: map['annualInterestRate']?.toDouble() ?? 0,
       createdAt: DateTime.parse(map['createdAt']),
@@ -50,6 +58,7 @@ class Account {
     int? id,
     String? name,
     BankType? bankType,
+    AccountType? accountType,
     double? balance,
     double? annualInterestRate,
     DateTime? createdAt,
@@ -59,6 +68,7 @@ class Account {
       id: id ?? this.id,
       name: name ?? this.name,
       bankType: bankType ?? this.bankType,
+      accountType: accountType ?? this.accountType,
       balance: balance ?? this.balance,
       annualInterestRate: annualInterestRate ?? this.annualInterestRate,
       createdAt: createdAt ?? this.createdAt,

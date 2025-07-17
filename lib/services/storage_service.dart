@@ -37,6 +37,7 @@ class StorageService {
       id: DateTime.now().millisecondsSinceEpoch,
       name: account.name,
       bankType: account.bankType,
+      accountType: account.accountType,
       balance: account.balance,
       annualInterestRate: account.annualInterestRate,
       createdAt: account.createdAt,

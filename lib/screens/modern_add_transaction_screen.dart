@@ -241,7 +241,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
     final isSelected = _selectedSource == source;
     
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
         color: isSelected ? color : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
@@ -288,7 +288,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
     final isSelected = _selectedType == type;
     
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
         color: isSelected ? color : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
@@ -345,15 +345,15 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
           TextFormField(
             controller: _amountController,
             style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
             decoration: InputDecoration(
               prefixText: '\$ ',
               prefixStyle: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
                 color: AppTheme.textSecondary,
               ),
               hintText: '0.00',
@@ -475,7 +475,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: bankColor.withValues(alpha: 0.1),
+                          color: bankColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Center(
@@ -658,10 +658,10 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                color: AppTheme.primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                  color: AppTheme.primaryColor.withOpacity(0.2),
                 ),
               ),
               child: SwitchListTile(
@@ -735,7 +735,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    color: AppTheme.successColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

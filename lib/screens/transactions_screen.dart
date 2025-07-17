@@ -6,7 +6,7 @@ import '../models/transaction.dart';
 import '../models/account.dart';
 import '../theme/app_theme.dart';
 import '../widgets/modern_card.dart';
-import 'modern_add_transaction_screen.dart';
+import 'compatible_transaction_screen.dart';
 import 'edit_transaction_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -133,7 +133,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const ModernAddTransactionScreen(),
+              builder: (context) => const CompatibleTransactionScreen(),
             ),
           );
         },
@@ -175,6 +175,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           orElse: () => Account(
             name: 'Cuenta desconocida',
             bankType: BankType.bbva,
+            accountType: AccountType.debit,
             balance: 0,
             annualInterestRate: 0,
             createdAt: DateTime.now(),
