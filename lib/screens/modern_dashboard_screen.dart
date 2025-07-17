@@ -32,8 +32,13 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Finanzas Personales'),
-        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+          ),
+        ),
       ),
       body: Consumer<FinanceProvider>(
         builder: (context, provider, child) {
