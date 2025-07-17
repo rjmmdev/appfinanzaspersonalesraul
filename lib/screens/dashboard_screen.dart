@@ -6,7 +6,7 @@ import '../models/account.dart';
 import '../models/credit_card.dart';
 import 'accounts_screen.dart';
 import 'transactions_screen.dart';
-import 'add_transaction_screen.dart';
+import 'compatible_transaction_screen.dart';
 import 'cfdi_guide_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -61,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddTransactionScreen(),
+              builder: (context) => const CompatibleTransactionScreen(),
             ),
           );
         },
