@@ -34,6 +34,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Mis Finanzas'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Guía CFDI',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CFDIGuideScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Consumer<FinanceProvider>(
         builder: (context, provider, child) {
