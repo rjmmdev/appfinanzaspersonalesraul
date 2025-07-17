@@ -200,6 +200,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildCreditCardsList(FinanceProvider provider) {
+    final creditCards = provider.creditCards;
+    final creditAccounts = provider.creditAccounts;
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -212,7 +215,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...provider.creditCards.map((card) => _buildCreditCardTile(card)),
+            if (creditCards.isEmpty && creditAccounts.isEmpty)
+              const Text('No hay tarjetas disponibles')
+            else ...[
+              ...creditCards.map((card) => _buildCreditCardTile(card)),
+              ...creditAccounts.map((account) => _buildAccountCardAsCredit(account)),
+            ],
           ],
         ),
       ),
@@ -255,6 +263,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           Text(
             'Disponible: ${currencyFormat.format(card.availableCredit)}',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+      isThreeLine: true,
+    );
+  }
+
+  Widget _buildAccountCardAsCredit(Account account) {
+    final limit = account.creditLimit ?? 0;
+    final used = account.balance.abs();
+    final available = limit - used;
+    final usagePercent = limit > 0 ? (used / limit) * 100 : 0.0;
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: _getBankColor(account.bankType),
+        child: const Icon(Icons.credit_card, color: Colors.white),
+      ),
+      title: Text(account.name),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Límite: ${currencyFormat.format(limit)}'),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: usagePercent / 100,
+            backgroundColor: Colors.grey[300],
+            color: usagePercent > 80 ? Colors.red : Colors.blue,
+          ),
+          const SizedBox(height: 2),
+          Text('${usagePercent.toStringAsFixed(1)}% utilizado'),
+        ],
+      ),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            currencyFormat.format(account.balance),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
+          Text(
+            'Disponible: ${currencyFormat.format(available)}',
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
