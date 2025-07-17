@@ -82,7 +82,7 @@ lib/
 ├── screens/                    # UI screens
 │   ├── modern_dashboard_screen.dart # Main dashboard
 │   ├── modern_accounts_screen.dart  # Account management
-│   ├── modern_add_transaction_screen.dart # Add transactions
+│   ├── compatible_transaction_screen.dart # Add transactions
 │   ├── transactions_screen.dart     # Transaction history
 │   ├── cfdi_guide_screen.dart      # Mexican tax guide
 │   └── invoices_screen.dart        # Invoice management
