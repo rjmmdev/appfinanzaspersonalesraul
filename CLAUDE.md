@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Flutter application for personal finance management called "finanzasraul". The app is designed to help track personal finances for someone registered under the RESICO tax regime in Mexico, with specific features for:
-- Multiple bank account management (BBVA, Mercado Pago, Nu, DIDI)
-- Daily interest calculations (DIDI: 15% annual, Mercado Pago: 14% annual)
-- Expense tracking with VAT (IVA) support and deductible VAT tracking
-- Credit card management (Nu card with $2,000 MXN limit)
+This is a Flutter application for personal finance management called "finanzasraul". The app tracks personal finances with Mexican tax regime considerations (RESICO), featuring:
+- Multi-bank account management (BBVA, Mercado Pago, Nu, DIDI)
+- Daily interest calculations for interest-bearing accounts
+- Expense tracking with IVA (Mexican VAT) support and deductible expense tracking
+- Credit card management
+- Modern UI with custom theming and responsive design
 
 ## Common Commands
 
@@ -17,7 +18,7 @@ This is a Flutter application for personal finance management called "finanzasra
 # Get dependencies
 flutter pub get
 
-# Run the app
+# Run the app (default device)
 flutter run
 
 # Run on specific device
@@ -47,23 +48,94 @@ flutter analyze
 dart format lib test
 ```
 
-## Architecture Considerations
+### Hot Reload and Restart
+During `flutter run`:
+- `r` - Hot reload (preserves state)
+- `R` - Hot restart (resets state)
+- `q` - Quit
 
-### Data Models Required
-- **Account**: Bank accounts with balance, interest rates, and bank type
-- **Transaction**: Expenses/income with VAT information and deductibility status
-- **CreditCard**: Credit card information with limit and current balance
-- **DailyInterest**: Calculated daily interest for DIDI and Mercado Pago accounts
+## Architecture
 
-### Key Features to Implement
-1. **Multi-Account Dashboard**: Overview of all bank accounts and total balance
-2. **Transaction Management**: Add/edit/delete transactions with VAT calculations
-3. **Interest Calculator**: Automatic daily interest calculations for DIDI (15%) and MP (14%)
-4. **RESICO Tax Support**: Track deductible expenses and generate reports
-5. **Credit Card Tracker**: Monitor Nu credit card usage against $2,000 limit
+### Tech Stack
+- **Framework**: Flutter 3.8.1+
+- **State Management**: Provider pattern with ChangeNotifier
+- **Database**: SQLite via sqflite package for local persistence
+- **Backend**: Firebase (Core, Firestore, Storage, Auth)
+- **Internationalization**: Spanish Mexico (es_MX) locale
+- **Charts**: fl_chart for financial visualizations
 
-### Database Considerations
-Consider using SQLite with sqflite package for local data persistence, as this is financial data that should be stored securely on device.
+### Project Structure
+```
+lib/
+├── main.dart                    # App entry point with Firebase setup
+├── firebase_options.dart       # Firebase configuration
+├── models/                     # Data models
+│   ├── account.dart            # Bank account model
+│   ├── transaction.dart        # Financial transaction model
+│   ├── credit_card.dart        # Credit card model
+│   └── daily_interest.dart     # Interest calculation model
+├── providers/                  # State management
+│   ├── finance_provider.dart   # Main finance state manager
+│   ├── account_provider.dart   # Account-specific operations
+│   ├── transaction_provider.dart # Transaction operations
+│   └── credit_card_provider.dart # Credit card operations
+├── screens/                    # UI screens
+│   ├── modern_dashboard_screen.dart # Main dashboard
+│   ├── modern_accounts_screen.dart  # Account management
+│   ├── modern_add_transaction_screen.dart # Add transactions
+│   ├── transactions_screen.dart     # Transaction history
+│   ├── cfdi_guide_screen.dart      # Mexican tax guide
+│   └── invoices_screen.dart        # Invoice management
+├── services/                   # Business logic
+│   ├── database_service.dart   # SQLite operations
+│   ├── firebase_service.dart   # Firebase operations
+│   └── storage_service.dart    # Local storage
+├── theme/
+│   └── app_theme.dart         # Custom Material theme
+└── widgets/
+    └── modern_card.dart       # Reusable UI components
+```
 
-### State Management
-For a financial app with multiple interconnected features, consider using Provider or Riverpod for state management to handle account balances, transactions, and real-time calculations efficiently.
+### Data Models
+- **Account**: Bank accounts with balance, interest rates, and bank-specific configurations
+- **Transaction**: Financial transactions with IVA calculations and deductible status tracking
+- **CreditCard**: Credit card management with limits and payment tracking
+- **DailyInterest**: Automatic interest calculations for investment accounts
+
+### Key Features Implemented
+1. **Multi-Account Dashboard**: Real-time overview of all financial accounts
+2. **Transaction Management**: Complete CRUD operations with IVA calculations
+3. **Interest Calculations**: Automated daily interest for DIDI (15%) and Mercado Pago (14%)
+4. **Mexican Tax Support**: RESICO regime support with deductible expense tracking
+5. **Modern UI**: Material Design 3 with custom theming and responsive layouts
+6. **Firebase Integration**: Cloud backup and synchronization capabilities
+
+### State Management Pattern
+The app uses Provider pattern with a centralized `FinanceProvider` that coordinates:
+- Account balances and updates
+- Transaction history and calculations
+- Interest accrual automation
+- Real-time financial summaries
+- Local and cloud data synchronization
+
+### Database Schema
+SQLite database with tables for:
+- `accounts`: Bank account information and balances
+- `transactions`: Financial transactions with IVA data
+- `credit_cards`: Credit card details and usage
+- `daily_interests`: Interest calculation history
+
+### Mexican Banking Integration Research
+The project includes comprehensive research on Mexican banking APIs and Open Banking regulations in `investigacion_apis_bancarias_mexico.md`, covering integration options with major Mexican financial institutions.
+
+## Important Dependencies
+
+Key packages from pubspec.yaml:
+- **provider**: ^6.1.1 - State management
+- **sqflite**: ^2.3.0 - Local SQLite database
+- **firebase_core**: ^2.24.0 - Firebase initialization
+- **cloud_firestore**: ^4.13.3 - Cloud database
+- **fl_chart**: ^0.66.0 - Financial charts and graphs
+- **intl**: ^0.18.1 - Internationalization and date/number formatting
+- **file_picker**: ^6.1.1 - Document/file selection
+- **image_picker**: ^1.0.4 - Photo capture for receipts

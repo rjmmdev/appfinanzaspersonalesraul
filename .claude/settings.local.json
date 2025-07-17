@@ -9,7 +9,13 @@
       "Bash(dart pub global run flutterfire_cli:flutterfire configure:*)",
       "Bash(firebase:*)",
       "Bash(npm install:*)",
-      "Bash(flutter:*)"
+      "Bash(flutter:*)",
+      "Bash(dart compile:*)",
+      "Bash(sed:*)",
+      "Bash(dart analyze:*)",
+      "Bash(dart format:*)",
+      "Bash(del libservicesdatabase_service.dart libservicessync_service.dart libserviceslocal_only_service.dart)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

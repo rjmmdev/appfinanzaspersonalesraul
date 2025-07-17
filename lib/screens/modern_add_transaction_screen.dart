@@ -9,7 +9,6 @@ import '../providers/finance_provider.dart';
 import '../models/transaction.dart';
 import '../models/account.dart';
 import '../theme/app_theme.dart';
-import '../widgets/modern_card.dart';
 import '../services/firebase_service.dart';
 import 'cfdi_guide_screen.dart';
 
@@ -20,18 +19,15 @@ class ModernAddTransactionScreen extends StatefulWidget {
   State<ModernAddTransactionScreen> createState() => _ModernAddTransactionScreenState();
 }
 
-class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen> 
-    with SingleTickerProviderStateMixin {
+class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'es_MX', symbol: '\$');
   
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  
   TransactionType _selectedType = TransactionType.expense;
   int? _selectedAccountId;
+  MoneySource _selectedSource = MoneySource.personal;
   bool _hasIva = false;
   bool _isDeductibleIva = false;
   String? _selectedCategory;
@@ -75,24 +71,9 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
   };
 
   @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-    _animationController.forward();
-  }
-
-  @override
   void dispose() {
     _descriptionController.dispose();
     _amountController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -128,59 +109,157 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
             ),
         ],
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildTransactionTypeSelector(),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildTransactionTypeSelector(),
+            const SizedBox(height: 20),
+            _buildSourceSelector(),
+            const SizedBox(height: 20),
+            _buildAmountInput(),
+            const SizedBox(height: 20),
+            _buildAccountSelector(provider),
+            const SizedBox(height: 20),
+            _buildDetailsSection(),
+            if (_selectedType == TransactionType.expense) ...[
               const SizedBox(height: 20),
-              _buildAmountInput(),
-              const SizedBox(height: 20),
-              _buildAccountSelector(provider),
-              const SizedBox(height: 20),
-              _buildDetailsSection(),
-              if (_selectedType == TransactionType.expense) ...[
+              _buildIVASection(),
+              if (_isDeductibleIva) ...[
                 const SizedBox(height: 20),
-                _buildIVASection(),
-                if (_isDeductibleIva) ...[
-                  const SizedBox(height: 20),
-                  _buildInvoiceSection(),
-                ],
+                _buildInvoiceSection(),
               ],
-              const SizedBox(height: 32),
             ],
-          ),
+            const SizedBox(height: 32),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildTransactionTypeSelector() {
-    return ModernCard(
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildTypeButton(
-              type: TransactionType.income,
-              icon: Icons.arrow_downward,
-              label: 'Ingreso',
-              color: AppTheme.successColor,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildTypeButton(
+                type: TransactionType.income,
+                icon: Icons.arrow_downward,
+                label: 'Ingreso',
+                color: AppTheme.successColor,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildTypeButton(
-              type: TransactionType.expense,
-              icon: Icons.arrow_upward,
-              label: 'Gasto',
-              color: AppTheme.errorColor,
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildTypeButton(
+                type: TransactionType.expense,
+                icon: Icons.arrow_upward,
+                label: 'Gasto',
+                color: AppTheme.errorColor,
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Fuente del Dinero',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSourceButton(
+                    source: MoneySource.personal,
+                    icon: Icons.person,
+                    label: 'Personal',
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildSourceButton(
+                    source: MoneySource.work,
+                    icon: Icons.work,
+                    label: 'Trabajo',
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _selectedSource == MoneySource.work 
+                  ? 'Este dinero proviene del trabajo y no debe gastarse innecesariamente'
+                  : 'Este es dinero personal disponible para gastos',
+              style: TextStyle(
+                fontSize: 12,
+                color: _selectedSource == MoneySource.work ? Colors.orange[700] : Colors.blue[700],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceButton({
+    required MoneySource source,
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    final isSelected = _selectedSource == source;
+    
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: isSelected ? color : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color),
+      ),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedSource = source;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : color,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -237,10 +316,12 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
   }
 
   Widget _buildAmountInput() {
-    return ModernCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Text(
             'Monto',
             style: Theme.of(context).textTheme.titleMedium,
@@ -287,7 +368,8 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
             const Divider(height: 32),
             _buildIVABreakdown(),
           ],
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -343,10 +425,12 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
   }
 
   Widget _buildAccountSelector(FinanceProvider provider) {
-    return ModernCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Text(
             'Cuenta',
             style: Theme.of(context).textTheme.titleMedium,
@@ -413,19 +497,22 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
             },
           ),
         ],
+        ),
       ),
     );
   }
 
   Widget _buildDetailsSection() {
-    return ModernCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Detalles',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Detalles',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _descriptionController,
@@ -434,8 +521,11 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
               hintText: 'Ej: Comida en restaurante',
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Por favor ingresa una descripción';
+              }
+              if (value.trim().length < 3) {
+                return 'La descripción debe tener al menos 3 caracteres';
               }
               return null;
             },
@@ -485,23 +575,26 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildIVASection() {
-    return ModernCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Información fiscal',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Información fiscal',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               TextButton.icon(
                 onPressed: () {
                   Navigator.push(
@@ -594,23 +687,26 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
               },
             ),
           ],
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildInvoiceSection() {
-    return ModernCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Facturas (CFDI)',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Facturas (CFDI)',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               if (_selectedInvoices.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -707,7 +803,8 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
               color: AppTheme.textSecondary,
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -797,86 +894,141 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
   }
 
   void _saveTransaction() async {
-    if (_formKey.currentState!.validate()) {
-      final provider = context.read<FinanceProvider>();
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      setState(() {
-        _isUploading = true;
-      });
+    // Validar que se haya seleccionado una cuenta
+    if (_selectedAccountId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Por favor selecciona una cuenta'),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
 
-      try {
-        // Primero guardar la transacción
-        final transactionId = await provider.addTransaction(
-          accountId: _selectedAccountId!,
-          description: _descriptionController.text,
-          amount: double.parse(_amountController.text),
-          hasIva: _hasIva,
-          isDeductibleIva: _isDeductibleIva,
-          type: _selectedType,
-          category: _selectedCategory,
-          usoCFDI: _selectedUsoCFDI,
-          transactionDate: _selectedDate,
+    // Validar CFDI si es deducible
+    if (_isDeductibleIva && _selectedUsoCFDI == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Por favor selecciona el uso de CFDI para gastos deducibles'),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final provider = context.read<FinanceProvider>();
+
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      // Validar que el monto sea válido
+      final amount = double.tryParse(_amountController.text);
+      if (amount == null || amount <= 0) {
+        throw Exception('Monto inválido');
+      }
+
+      // Guardar la transacción
+      final transactionId = await provider.addTransaction(
+        accountId: _selectedAccountId!,
+        description: _descriptionController.text.trim(),
+        amount: amount,
+        hasIva: _hasIva,
+        isDeductibleIva: _isDeductibleIva,
+        type: _selectedType,
+        source: _selectedSource,
+        category: _selectedCategory,
+        usoCFDI: _selectedUsoCFDI,
+        transactionDate: _selectedDate,
+      );
+
+      print('Transaction saved with ID: $transactionId');
+
+      // Si hay facturas seleccionadas y la transacción es deducible, subirlas
+      if (_isDeductibleIva && _selectedInvoices.isNotEmpty && transactionId != null) {
+        final firebaseService = FirebaseService();
+        final List<String> uploadedUrls = [];
+
+        for (int i = 0; i < _selectedInvoices.length; i++) {
+          final file = _selectedInvoices[i];
+          try {
+            final fileName = file.path.split('/').last;
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final uniqueFileName = '${timestamp}_${i}_$fileName';
+            
+            print('Uploading invoice: $uniqueFileName');
+            
+            final url = await firebaseService.uploadInvoice(
+              file: file,
+              transactionId: transactionId,
+              fileName: uniqueFileName,
+            );
+            uploadedUrls.add(url);
+            print('Invoice uploaded successfully: $url');
+          } catch (e) {
+            print('Error uploading invoice ${file.path}: $e');
+            // Continuar con el siguiente archivo en caso de error
+          }
+        }
+
+        // Actualizar la transacción con las URLs de las facturas
+        if (uploadedUrls.isNotEmpty) {
+          print('Updating transaction with ${uploadedUrls.length} invoice URLs');
+          await provider.updateTransactionInvoices(transactionId, uploadedUrls);
+        }
+      }
+
+      if (mounted) {
+        final message = _selectedInvoices.isNotEmpty && _isDeductibleIva
+            ? 'Transacción y facturas guardadas exitosamente'
+            : 'Transacción guardada exitosamente';
+            
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppTheme.successColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
         );
-
-        // Si hay facturas seleccionadas y la transacción es deducible, subirlas
-        if (_isDeductibleIva && _selectedInvoices.isNotEmpty && transactionId != null) {
-          final firebaseService = FirebaseService();
-          final List<String> uploadedUrls = [];
-
-          for (final file in _selectedInvoices) {
-            try {
-              final fileName = file.path.split('/').last;
-              final url = await firebaseService.uploadInvoice(
-                file: file,
-                transactionId: transactionId,
-                fileName: fileName,
-              );
-              uploadedUrls.add(url);
-            } catch (e) {
-              print('Error uploading invoice: $e');
-            }
-          }
-
-          // Actualizar la transacción con las URLs de las facturas
-          if (uploadedUrls.isNotEmpty) {
-            await provider.updateTransactionInvoices(transactionId, uploadedUrls);
-          }
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(_selectedInvoices.isNotEmpty && _isDeductibleIva
-                  ? 'Transacción y facturas guardadas exitosamente'
-                  : 'Transacción guardada exitosamente'),
-              backgroundColor: AppTheme.successColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      print('Error saving transaction: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar: ${e.toString()}'),
+            backgroundColor: AppTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          );
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al guardar: $e'),
-              backgroundColor: AppTheme.errorColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isUploading = false;
-          });
-        }
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
       }
     }
   }

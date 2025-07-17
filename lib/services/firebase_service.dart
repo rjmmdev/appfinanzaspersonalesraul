@@ -10,6 +10,11 @@ class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   
+  // Mapas para rastrear IDs de Firebase
+  final Map<int, String> _accountFirebaseIds = {};
+  final Map<int, String> _transactionFirebaseIds = {};
+  final Map<int, String> _creditCardFirebaseIds = {};
+  
   // Colecciones
   static const String _accountsCollection = 'accounts';
   static const String _transactionsCollection = 'transactions';
@@ -20,37 +25,54 @@ class FirebaseService {
   // ========== ACCOUNTS ==========
   Future<List<Account>> getAccounts() async {
     try {
+      print('FirebaseService: Fetching accounts from Firestore...');
       final QuerySnapshot snapshot = await _firestore
           .collection(_accountsCollection)
-          .orderBy('createdAt', descending: false)
           .get();
       
-      return snapshot.docs.map((doc) {
+      print('FirebaseService: Found ${snapshot.docs.length} documents in accounts collection');
+      
+      _accountFirebaseIds.clear(); // Limpiar el mapa antes de llenarlo
+      
+      final accounts = snapshot.docs.map((doc) {
+        print('FirebaseService: Processing document ${doc.id}');
         final data = doc.data() as Map<String, dynamic>;
-        data['id'] = int.tryParse(doc.id) ?? 0;
+        print('FirebaseService: Document data: $data');
+        
+        // Generar un ID numérico único basado en el timestamp
+        final numericId = doc.id.hashCode.abs();
+        data['id'] = numericId;
+        
+        // Guardar la relación ID numérico -> ID Firebase
+        _accountFirebaseIds[numericId] = doc.id;
+        
         return Account.fromMap(data);
       }).toList();
+      
+      print('FirebaseService: Successfully loaded ${accounts.length} accounts');
+      return accounts;
     } catch (e) {
-      print('Error getting accounts: $e');
+      print('FirebaseService: Error getting accounts: $e');
       return [];
     }
   }
 
   Future<Account> insertAccount(Account account) async {
     try {
-      final docRef = await _firestore.collection(_accountsCollection).add(
-        account.toMap()..remove('id'),
-      );
+      // Preparar datos para Firebase (sin el ID)
+      final data = account.toMap()..remove('id');
       
-      return Account(
-        id: int.tryParse(docRef.id) ?? DateTime.now().millisecondsSinceEpoch,
-        name: account.name,
-        bankType: account.bankType,
-        balance: account.balance,
-        annualInterestRate: account.annualInterestRate,
-        createdAt: account.createdAt,
-        updatedAt: account.updatedAt,
-      );
+      // Agregar a Firebase
+      final docRef = await _firestore.collection(_accountsCollection).add(data);
+      
+      // Generar ID numérico
+      final numericId = docRef.id.hashCode.abs();
+      
+      // Guardar la relación
+      _accountFirebaseIds[numericId] = docRef.id;
+      
+      // Devolver la cuenta con el ID numérico
+      return account.copyWith(id: numericId);
     } catch (e) {
       print('Error inserting account: $e');
       rethrow;
@@ -59,9 +81,16 @@ class FirebaseService {
 
   Future<void> updateAccount(Account account) async {
     try {
+      // Obtener el ID de Firebase
+      final firebaseId = _accountFirebaseIds[account.id!];
+      if (firebaseId == null) {
+        throw Exception('No se encontró el ID de Firebase para la cuenta ${account.id}');
+      }
+      
+      // Actualizar en Firebase
       await _firestore
           .collection(_accountsCollection)
-          .doc(account.id.toString())
+          .doc(firebaseId)
           .update(account.toMap()..remove('id'));
     } catch (e) {
       print('Error updating account: $e');
@@ -86,12 +115,17 @@ class FirebaseService {
     try {
       final QuerySnapshot snapshot = await _firestore
           .collection(_transactionsCollection)
-          .orderBy('transactionDate', descending: true)
           .get();
+      
+      _transactionFirebaseIds.clear();
       
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        data['id'] = int.tryParse(doc.id) ?? 0;
+        final numericId = doc.id.hashCode.abs();
+        data['id'] = numericId;
+        
+        _transactionFirebaseIds[numericId] = doc.id;
+        
         return app_models.Transaction.fromMap(data);
       }).toList();
     } catch (e) {
@@ -102,12 +136,24 @@ class FirebaseService {
 
   Future<app_models.Transaction> insertTransaction(app_models.Transaction transaction) async {
     try {
-      final docRef = await _firestore.collection(_transactionsCollection).add(
-        transaction.toMap()..remove('id'),
-      );
+      final transactionData = transaction.toMap()..remove('id');
+      
+      // Asegurar que todos los campos requeridos estén presentes
+      transactionData['createdAt'] = transaction.createdAt.toIso8601String();
+      transactionData['transactionDate'] = transaction.transactionDate.toIso8601String();
+      transactionData['type'] = transaction.type.index;
+      transactionData['hasIva'] = transaction.hasIva ? 1 : 0;
+      transactionData['isDeductibleIva'] = transaction.isDeductibleIva ? 1 : 0;
+      transactionData['source'] = transaction.source.index;
+      
+      print('Inserting transaction data: $transactionData');
+      
+      final docRef = await _firestore.collection(_transactionsCollection).add(transactionData);
+      
+      print('Transaction inserted with document ID: ${docRef.id}');
       
       return app_models.Transaction(
-        id: int.tryParse(docRef.id) ?? DateTime.now().millisecondsSinceEpoch,
+        id: docRef.id.hashCode, // Usar hash del ID para convertir a int
         accountId: transaction.accountId,
         description: transaction.description,
         amount: transaction.amount,
@@ -117,6 +163,7 @@ class FirebaseService {
         isDeductibleIva: transaction.isDeductibleIva,
         type: transaction.type,
         category: transaction.category,
+        source: transaction.source,
         usoCFDI: transaction.usoCFDI,
         invoiceUrls: transaction.invoiceUrls,
         transactionDate: transaction.transactionDate,

@@ -397,6 +397,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         hasIva: _hasIva,
         isDeductibleIva: _isDeductibleIva,
         type: _selectedType,
+        source: MoneySource.personal,
         category: _selectedCategory,
         usoCFDI: _selectedUsoCFDI,
       );

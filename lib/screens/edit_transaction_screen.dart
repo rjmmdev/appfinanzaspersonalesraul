@@ -522,6 +522,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
           hasIva: _hasIva,
           isDeductibleIva: _isDeductibleIva,
           type: _selectedType,
+          source: widget.transaction.source,
           category: _selectedCategory,
           usoCFDI: _selectedUsoCFDI,
           transactionDate: _selectedDate,

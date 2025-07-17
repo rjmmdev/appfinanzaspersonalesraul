@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+enum MoneySource {
+  personal, // Dinero personal
+  work,     // Dinero del trabajo
+}
 
 @immutable
 class Transaction {
@@ -13,6 +17,7 @@ class Transaction {
   final bool isDeductibleIva; // IVA acreditable
   final TransactionType type;
   final String? category;
+  final MoneySource source; // Fuente del dinero (trabajo vs personal)
   final String? usoCFDI; // Uso de CFDI cuando hay IVA acreditable
   final List<String>? invoiceUrls; // URLs de las facturas en Firebase Storage
   final DateTime transactionDate;
@@ -31,6 +36,7 @@ class Transaction {
     required this.isDeductibleIva,
     required this.type,
     this.category,
+    required this.source,
     this.usoCFDI,
     this.invoiceUrls,
     required this.transactionDate,
@@ -49,6 +55,7 @@ class Transaction {
       'isDeductibleIva': isDeductibleIva ? 1 : 0,
       'type': type.index,
       'category': category,
+      'source': source.index,
       'usoCFDI': usoCFDI,
       'invoiceUrls': invoiceUrls,
       'transactionDate': transactionDate.toIso8601String(),
@@ -68,6 +75,7 @@ class Transaction {
       isDeductibleIva: map['isDeductibleIva'] == 1,
       type: TransactionType.values[map['type']],
       category: map['category'],
+      source: map['source'] != null ? MoneySource.values[map['source']] : MoneySource.personal,
       usoCFDI: map['usoCFDI'],
       invoiceUrls: map['invoiceUrls'] != null 
           ? List<String>.from(map['invoiceUrls']) 
@@ -88,6 +96,7 @@ class Transaction {
     bool? isDeductibleIva,
     TransactionType? type,
     String? category,
+    MoneySource? source,
     String? usoCFDI,
     List<String>? invoiceUrls,
     DateTime? transactionDate,
@@ -104,6 +113,7 @@ class Transaction {
       isDeductibleIva: isDeductibleIva ?? this.isDeductibleIva,
       type: type ?? this.type,
       category: category ?? this.category,
+      source: source ?? this.source,
       usoCFDI: usoCFDI ?? this.usoCFDI,
       invoiceUrls: invoiceUrls ?? this.invoiceUrls,
       transactionDate: transactionDate ?? this.transactionDate,

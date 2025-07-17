@@ -29,18 +29,41 @@ class FinanceProvider extends ChangeNotifier {
   }
 
   Future<void> loadAccounts() async {
-    _accounts = await _firebaseService.getAccounts();
-    notifyListeners();
+    try {
+      print('FinanceProvider: Loading accounts from Firebase...');
+      _accounts = await _firebaseService.getAccounts();
+      print('FinanceProvider: Loaded ${_accounts.length} accounts from Firebase');
+      for (var account in _accounts) {
+        print('  - Account: ${account.name} (${account.bankType}) - Balance: ${account.balance}');
+      }
+      notifyListeners();
+    } catch (e) {
+      print('FinanceProvider: Error loading accounts from Firebase: $e');
+      _accounts = [];
+      notifyListeners();
+    }
   }
 
   Future<void> loadTransactions() async {
-    _transactions = await _firebaseService.getTransactions();
-    notifyListeners();
+    try {
+      _transactions = await _firebaseService.getTransactions();
+      notifyListeners();
+    } catch (e) {
+      print('Error loading transactions from Firebase: $e');
+      _transactions = [];
+      notifyListeners();
+    }
   }
 
   Future<void> loadCreditCards() async {
-    _creditCards = await _firebaseService.getCreditCards();
-    notifyListeners();
+    try {
+      _creditCards = await _firebaseService.getCreditCards();
+      notifyListeners();
+    } catch (e) {
+      print('Error loading credit cards from Firebase: $e');
+      _creditCards = [];
+      notifyListeners();
+    }
   }
 
   Future<void> updateTotalBalances() async {
@@ -82,6 +105,7 @@ class FinanceProvider extends ChangeNotifier {
     required bool hasIva,
     required bool isDeductibleIva,
     required TransactionType type,
+    required MoneySource source,
     String? category,
     String? usoCFDI,
     DateTime? transactionDate,
@@ -105,6 +129,7 @@ class FinanceProvider extends ChangeNotifier {
       isDeductibleIva: isDeductibleIva,
       type: type,
       category: category,
+      source: source,
       usoCFDI: usoCFDI,
       transactionDate: transactionDate ?? DateTime.now(),
       createdAt: DateTime.now(),
@@ -164,13 +189,26 @@ class FinanceProvider extends ChangeNotifier {
   }
 
   Future<void> updateTransactionInvoices(int transactionId, List<String> invoiceUrls) async {
-    final transaction = _transactions.firstWhere((t) => t.id == transactionId);
-    
-    await _firebaseService.updateTransaction(transaction.copyWith(
-      invoiceUrls: invoiceUrls,
-    ));
-
-    await loadData();
+    try {
+      print('Updating transaction $transactionId with invoice URLs: $invoiceUrls');
+      
+      final transaction = _transactions.firstWhere(
+        (t) => t.id == transactionId,
+        orElse: () => throw Exception('Transaction not found with ID: $transactionId'),
+      );
+      
+      final updatedTransaction = transaction.copyWith(
+        invoiceUrls: invoiceUrls,
+      );
+      
+      await _firebaseService.updateTransaction(updatedTransaction);
+      print('Transaction updated successfully with ${invoiceUrls.length} invoice URLs');
+      
+      await loadData();
+    } catch (e) {
+      print('Error updating transaction invoices: $e');
+      rethrow;
+    }
   }
 
   Future<void> deleteTransaction(int transactionId) async {
@@ -205,6 +243,7 @@ class FinanceProvider extends ChangeNotifier {
     required bool hasIva,
     required bool isDeductibleIva,
     required TransactionType type,
+    required MoneySource source,
     String? category,
     String? usoCFDI,
     DateTime? transactionDate,
@@ -245,6 +284,7 @@ class FinanceProvider extends ChangeNotifier {
       isDeductibleIva: isDeductibleIva,
       type: type,
       category: category,
+      source: source,
       usoCFDI: usoCFDI,
       transactionDate: transactionDate ?? oldTransaction.transactionDate,
     );
@@ -271,34 +311,52 @@ class FinanceProvider extends ChangeNotifier {
     await loadData();
   }
 
-  Future<void> calculateDailyInterests() async {
-    final now = DateTime.now();
-    for (final account in _accounts) {
-      if (account.annualInterestRate > 0) {
-        final interest = account.calculateDailyInterest();
-        if (interest > 0) {
-          await _firebaseService.insertDailyInterest(
-            accountId: account.id!.toString(),
-            date: now,
-            balance: account.balance,
-            interestRate: account.annualInterestRate,
-            interestAmount: interest,
-          );
-          
-          final updatedAccount = account.copyWith(
-            balance: account.balance + interest,
-            updatedAt: now,
-          );
-          await _firebaseService.updateAccount(updatedAccount);
-        }
-      }
-    }
+  Future<void> updateAccountRate(int accountId, double newRate) async {
+    final account = _accounts.firstWhere((a) => a.id == accountId);
+    
+    await _firebaseService.updateAccount(account.copyWith(
+      annualInterestRate: newRate,
+      updatedAt: DateTime.now(),
+    ));
+    
     await loadData();
   }
 
-  Future<void> initializeDefaultAccounts() async {
-    await _firebaseService.initializeDefaultData();
+  Future<void> updateAccount(int accountId, String name, BankType bankType) async {
+    final account = _accounts.firstWhere((a) => a.id == accountId);
+    
+    await _firebaseService.updateAccount(account.copyWith(
+      name: name,
+      bankType: bankType,
+      updatedAt: DateTime.now(),
+    ));
+    
     await loadData();
+  }
+
+  Future<void> deleteAccount(int accountId) async {
+    // Primero eliminar todas las transacciones asociadas
+    final accountTransactions = _transactions.where((t) => t.accountId == accountId).toList();
+    
+    for (final transaction in accountTransactions) {
+      await _firebaseService.deleteTransaction(transaction.id!);
+    }
+    
+    // Luego eliminar la cuenta
+    await _firebaseService.deleteAccount(accountId);
+    
+    await loadData();
+  }
+
+
+  Future<void> initializeDefaultAccounts() async {
+    // No hacer nada por ahora, las cuentas se crearán manualmente
+    await loadData();
+  }
+
+  Future<void> calculateDailyInterests() async {
+    // TODO: Implementar cálculo de intereses en Firebase
+    print('Daily interests calculation pending implementation');
   }
 
   List<Transaction> getDeductibleTransactions() {
@@ -308,5 +366,36 @@ class FinanceProvider extends ChangeNotifier {
   double getTotalDeductibleIva() {
     return getDeductibleTransactions()
         .fold(0, (sum, transaction) => sum + transaction.ivaAmount);
+  }
+
+  Map<String, double> getBalancesBySource() {
+    double personalBalance = 0;
+    double workBalance = 0;
+
+    for (final transaction in _transactions) {
+      if (transaction.source == MoneySource.personal) {
+        if (transaction.type == TransactionType.income) {
+          personalBalance += transaction.amount;
+        } else if (transaction.type == TransactionType.expense) {
+          personalBalance -= transaction.amount;
+        }
+      } else if (transaction.source == MoneySource.work) {
+        if (transaction.type == TransactionType.income) {
+          workBalance += transaction.amount;
+        } else if (transaction.type == TransactionType.expense) {
+          workBalance -= transaction.amount;
+        }
+      }
+    }
+
+    return {
+      'personal': personalBalance,
+      'work': workBalance,
+      'total': personalBalance + workBalance,
+    };
+  }
+
+  List<Transaction> getTransactionsBySource(MoneySource source) {
+    return _transactions.where((t) => t.source == source).toList();
   }
 }
