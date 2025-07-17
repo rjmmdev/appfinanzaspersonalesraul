@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colores principales
-  static const Color primaryColor = Color(0xFF6366F1); // Indigo moderno
-  static const Color secondaryColor = Color(0xFF8B5CF6); // Violeta
-  static const Color accentColor = Color(0xFF10B981); // Verde esmeralda
+  static const Color primaryColor = Color(0xFF4F46E5); // Indigo moderno
+  static const Color secondaryColor = Color(0xFF9333EA); // Violeta
+  static const Color accentColor = Color(0xFF14B8A6); // Verde esmeralda
   
   // Colores de fondo
-  static const Color backgroundColor = Color(0xFFF9FAFB);
+  static const Color backgroundColor = Color(0xFFF3F4F6);
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color cardColor = Color(0xFFFFFFFF);
   
@@ -61,6 +62,7 @@ class AppTheme {
       colorScheme: colorScheme,
       primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
+      fontFamily: GoogleFonts.poppins().fontFamily,
       
       // AppBar Theme
       appBarTheme: const AppBarTheme(
