@@ -72,4 +72,11 @@ const List<Map<String, dynamic>> deductibleExpenses = [
     'detail':
         'Los pagos de n\u00f3mina y prestaciones sociales no generan IVA acreditable, aunque son deducibles de ISR si se cumplen los requisitos fiscales.'
   },
+  {
+    'name': 'Prestaci\u00f3n de servicios a terceros',
+    'keywords': ['servicios', 'honorarios', 'prestaci\u00f3n de servicios'],
+    'deductible': true,
+    'detail':
+        'Los servicios contratados para tu actividad (consultor\u00eda, mantenimiento, etc.) generan IVA acreditable siempre que cuentes con CFDI y se relacionen con el negocio.'
+  },
 ];
