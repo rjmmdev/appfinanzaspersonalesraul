@@ -128,7 +128,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
@@ -137,10 +137,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ),
           );
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
