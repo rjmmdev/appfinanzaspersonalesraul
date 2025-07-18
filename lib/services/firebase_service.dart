@@ -146,6 +146,7 @@ class FirebaseService {
       transactionData['hasIva'] = transaction.hasIva ? 1 : 0;
       transactionData['isDeductibleIva'] = transaction.isDeductibleIva ? 1 : 0;
       transactionData['source'] = transaction.source.index;
+      transactionData['satDebtType'] = transaction.satDebtType.index;
       
       final docRef = await _firestore.collection(_transactionsCollection).add(transactionData);
       
@@ -160,6 +161,7 @@ class FirebaseService {
         isDeductibleIva: transaction.isDeductibleIva,
         type: transaction.type,
         category: transaction.category,
+        satDebtType: transaction.satDebtType,
         source: transaction.source,
         usoCFDI: transaction.usoCFDI,
         invoiceUrls: transaction.invoiceUrls,

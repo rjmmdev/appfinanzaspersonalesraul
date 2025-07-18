@@ -26,6 +26,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
   MoneySource _selectedSource = MoneySource.personal;
   bool _hasIva = false;
   bool _isDeductibleIva = false;
+  SatDebtType _satDebtType = SatDebtType.none;
   String? _selectedCategory;
   String? _selectedUsoCFDI;
   DateTime _selectedDate = DateTime.now();
@@ -49,6 +50,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
     'Seguros',
     'Ahorro e Inversión',
     'Deudas',
+    'Deuda SAT',
     'Otros Gastos',
   ];
 
@@ -621,8 +623,38 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                   child: Text(category),
                 );
               }).toList(),
-              onChanged: (value) => setState(() => _selectedCategory = value),
+              onChanged: (value) => setState(() {
+                    _selectedCategory = value;
+                    if (value != 'Deuda SAT') {
+                      _satDebtType = SatDebtType.none;
+                    }
+                  }),
             ),
+            if (_selectedCategory == 'Deuda SAT') ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SatDebtType>(
+                value: _satDebtType,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: SatDebtType.iva,
+                    child: Text('IVA'),
+                  ),
+                  DropdownMenuItem(
+                    value: SatDebtType.isr,
+                    child: Text('ISR'),
+                  ),
+                ],
+                onChanged: (value) => setState(() => _satDebtType = value ?? SatDebtType.none),
+              ),
+            ],
           ],
         ),
       ),
@@ -860,6 +892,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
         isDeductibleIva: _isDeductibleIva,
         type: _selectedType,
         source: _selectedSource,
+        satDebtType: _satDebtType,
         category: _selectedCategory,
         usoCFDI: _selectedUsoCFDI,
         transactionDate: _selectedDate,

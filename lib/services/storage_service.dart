@@ -92,6 +92,7 @@ class StorageService {
       isDeductibleIva: transaction.isDeductibleIva,
       type: transaction.type,
       category: transaction.category,
+      satDebtType: transaction.satDebtType,
       source: transaction.source,
       usoCFDI: transaction.usoCFDI,
       transactionDate: transaction.transactionDate,
