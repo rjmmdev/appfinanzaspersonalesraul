@@ -31,7 +31,7 @@ const List<Map<String, dynamic>> deductibleExpenses = [
     'keywords': ['hospedaje', 'vi\u00e1ticos', 'hotel'],
     'deductible': true,
     'detail':
-        'Siempre que el viaje sea de negocios y cuentes con CFDI correcto.'
+        'Siempre que el viaje sea de negocios relacionado con consultor\u00eda en computaci\u00f3n y cuentes con CFDI correcto.'
   },
   {
     'name': 'Equipo de c\u00f3mputo',
@@ -39,6 +39,13 @@ const List<Map<String, dynamic>> deductibleExpenses = [
     'deductible': true,
     'detail':
         'Computadoras y accesorios utilizados en tu actividad econ\u00f3mica con CFDI I04.'
+  },
+  {
+    'name': 'Software y licencias',
+    'keywords': ['software', 'licencias', 'suscripciones', 'programas'],
+    'deductible': true,
+    'detail':
+        'Herramientas de software y licencias necesarias para la consultor\u00eda en computaci\u00f3n con CFDI I04 o I08.'
   },
   {
     'name': 'Multas y recargos',
@@ -57,7 +64,7 @@ const List<Map<String, dynamic>> deductibleExpenses = [
     'keywords': ['internet', 'celular', 'telefon\u00eda'],
     'deductible': true,
     'detail':
-        'Planes de telefon\u00eda e internet utilizados para el negocio con CFDI I06.'
+        'Planes de telefon\u00eda e internet utilizados para consultor\u00eda en computaci\u00f3n con CFDI I06.'
   },
   {
     'name': 'Entretenimiento personal',

@@ -12,12 +12,33 @@ class CFDIGuideScreen extends StatefulWidget {
 
 class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
   String query = '';
+  String filter = 'todos';
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   List<Map<String, dynamic>> get _results {
     return deductibleExpenses.where((expense) {
       final keywords = expense['keywords'] as List<String>;
-      return query.isEmpty ||
-          keywords.any((k) => k.toLowerCase().contains(query.toLowerCase()));
+      final matchesQuery = query.isEmpty ||
+          keywords.any((k) => k.toLowerCase().contains(query.toLowerCase())) ||
+          (expense['name'] as String)
+              .toLowerCase()
+              .contains(query.toLowerCase());
+      final matchesFilter = filter == 'todos' ||
+          (filter == 'acreditables' && expense['deductible'] == true) ||
+          (filter == 'no_acreditables' && expense['deductible'] == false);
+      return matchesQuery && matchesFilter;
     }).toList();
   }
 
@@ -33,6 +54,7 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSearchField(),
+          _buildFilterChips(),
           if (query.isEmpty) _buildInfoSection(),
           Expanded(
             child: results.isEmpty
@@ -59,13 +81,49 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: TextField(
-        decoration: const InputDecoration(
+        controller: _controller,
+        decoration: InputDecoration(
           labelText: 'Ingresa un gasto (ej. gasolina)',
-          prefixIcon: Icon(Icons.search),
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: query.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _controller.clear();
+                    setState(() => query = '');
+                  },
+                )
+              : null,
         ),
         onChanged: (value) {
           setState(() => query = value);
         },
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Text('Todos'),
+            selected: filter == 'todos',
+            onSelected: (_) => setState(() => filter = 'todos'),
+          ),
+          ChoiceChip(
+            label: const Text('Acreditables'),
+            selected: filter == 'acreditables',
+            onSelected: (_) => setState(() => filter = 'acreditables'),
+          ),
+          ChoiceChip(
+            label: const Text('No acreditables'),
+            selected: filter == 'no_acreditables',
+            onSelected: (_) => setState(() => filter = 'no_acreditables'),
+          ),
+        ],
       ),
     );
   }
@@ -82,6 +140,14 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
                 'Es el IVA que pagas en tus compras relacionadas a tu actividad. '
                 'Lo recuperas al restarlo del IVA que cobras a tus clientes.',
             color: AppTheme.infoColor,
+          ),
+          const SizedBox(height: 12),
+          _buildInfoCard(
+            icon: Icons.computer,
+            title: 'Actividad: Consultor\u00eda en computaci\u00f3n',
+            content:
+                'La acreditaci\u00f3n aplica a gastos relacionados con servicios de computaci\u00f3n y software.',
+            color: AppTheme.primaryColor,
           ),
           const SizedBox(height: 12),
           _buildInfoCard(
