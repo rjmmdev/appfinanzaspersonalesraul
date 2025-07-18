@@ -98,6 +98,24 @@ class CFDIGuideScreen extends StatelessWidget {
                     content: '• La factura debe estar a tu nombre y RFC\n• Debe incluir tu domicilio fiscal correcto\n• El uso de CFDI debe ser el adecuado\n• Solo gastos relacionados con tu actividad',
                     color: Colors.orange,
                   ),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(
+                    context,
+                    icon: Icons.people_alt,
+                    title: 'Sueldos y prestaciones',
+                    content:
+                        'Los pagos a empleados no generan IVA acreditable, pero son deducibles de ISR si cumples con las obligaciones de n\u00f3mina.',
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(
+                    context,
+                    icon: Icons.search,
+                    title: 'Busca un gasto',
+                    content:
+                        'Toca el icono de la lupa en la esquina superior para saber si un gasto es acreditable.',
+                    color: Colors.blueGrey,
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'Ejemplos de gastos deducibles',
