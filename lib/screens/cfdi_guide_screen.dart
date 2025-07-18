@@ -55,6 +55,14 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
         children: [
           _buildSearchField(),
           _buildFilterChips(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              'Resultados: \${results.length}',
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+          ),
+          const Divider(height: 16),
           if (query.isEmpty) _buildInfoSection(),
           Expanded(
             child: results.isEmpty
@@ -169,15 +177,20 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
     final bool deductible = expense['deductible'] as bool;
     final iconColor =
         deductible ? AppTheme.successColor : AppTheme.errorColor;
+    final IconData icon = expense['icon'] as IconData? ?? Icons.receipt_long;
     return ModernCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                deductible ? Icons.check_circle : Icons.cancel,
-                color: iconColor,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 20),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -193,13 +206,23 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
                   color: iconColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  deductible ? 'Acreditable' : 'No acreditable',
-                  style: TextStyle(
-                    color: iconColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      deductible ? Icons.check_circle : Icons.cancel,
+                      color: iconColor,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      deductible ? 'Acreditable' : 'No acreditable',
+                      style: TextStyle(
+                        color: iconColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
