@@ -65,4 +65,11 @@ const List<Map<String, dynamic>> deductibleExpenses = [
     'deductible': false,
     'detail': 'Diversi\u00f3n personal no es acreditable ante el SAT.'
   },
+  {
+    'name': 'Sueldos y prestaciones a empleados',
+    'keywords': ['sueldos', 'salarios', 'n\u00f3mina', 'prestaciones'],
+    'deductible': false,
+    'detail':
+        'Los pagos de n\u00f3mina y prestaciones sociales no generan IVA acreditable, aunque son deducibles de ISR si se cumplen los requisitos fiscales.'
+  },
 ];
