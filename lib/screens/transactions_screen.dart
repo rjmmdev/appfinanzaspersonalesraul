@@ -76,6 +76,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     _filterType = TransactionType.expense;
                     _showOnlyDeductible = false;
                     break;
+                  case 'satDebt':
+                    _filterType = TransactionType.satDebt;
+                    _showOnlyDeductible = false;
+                    break;
                   case 'deductible':
                     _filterType = null;
                     _showOnlyDeductible = true;
@@ -111,6 +115,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     Icon(Icons.arrow_upward, color: AppTheme.errorColor, size: 20),
                     SizedBox(width: 8),
                     Text('Gastos'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'satDebt',
+                child: Row(
+                  children: [
+                    Icon(Icons.gavel, color: AppTheme.warningColor, size: 20),
+                    SizedBox(width: 8),
+                    Text('Deuda SAT'),
                   ],
                 ),
               ),
@@ -523,6 +537,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     } else if (_filterType == TransactionType.expense) {
       message = 'No hay gastos';
       subtitle = 'Los gastos aparecerán aquí';
+    } else if (_filterType == TransactionType.satDebt) {
+      message = 'No hay deudas SAT';
+      subtitle = 'Las deudas SAT aparecerán aquí';
     } else if (_showOnlyDeductible) {
       message = 'No hay gastos deducibles';
       subtitle = 'Los gastos con IVA acreditable aparecerán aquí';
@@ -567,6 +584,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         return AppTheme.errorColor;
       case TransactionType.transfer:
         return AppTheme.infoColor;
+      case TransactionType.satDebt:
+        return AppTheme.warningColor;
     }
   }
 
@@ -578,6 +597,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         return Icons.arrow_upward;
       case TransactionType.transfer:
         return Icons.swap_horiz;
+      case TransactionType.satDebt:
+        return Icons.gavel;
     }
   }
 

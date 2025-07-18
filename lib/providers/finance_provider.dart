@@ -162,7 +162,8 @@ class FinanceProvider extends ChangeNotifier {
     double newBalance = account.balance;
     if (type == TransactionType.income) {
       newBalance += amount;
-    } else if (type == TransactionType.expense) {
+    } else if (type == TransactionType.expense ||
+        type == TransactionType.satDebt) {
       newBalance -= amount;
     }
 
@@ -236,7 +237,8 @@ class FinanceProvider extends ChangeNotifier {
     
     if (transaction.type == TransactionType.income) {
       newBalance -= transaction.amount; // Revertir ingreso
-    } else if (transaction.type == TransactionType.expense) {
+    } else if (transaction.type == TransactionType.expense ||
+        transaction.type == TransactionType.satDebt) {
       newBalance += transaction.amount; // Revertir gasto
     }
     
@@ -272,14 +274,16 @@ class FinanceProvider extends ChangeNotifier {
     double newBalance = account.balance;
     if (oldTransaction.type == TransactionType.income) {
       newBalance -= oldTransaction.amount;
-    } else if (oldTransaction.type == TransactionType.expense) {
+    } else if (oldTransaction.type == TransactionType.expense ||
+        oldTransaction.type == TransactionType.satDebt) {
       newBalance += oldTransaction.amount;
     }
     
     // Aplicar el nuevo cambio
     if (type == TransactionType.income) {
       newBalance += amount;
-    } else if (type == TransactionType.expense) {
+    } else if (type == TransactionType.expense ||
+        type == TransactionType.satDebt) {
       newBalance -= amount;
     }
     
@@ -421,19 +425,22 @@ class FinanceProvider extends ChangeNotifier {
       if (transaction.source == MoneySource.personal) {
         if (transaction.type == TransactionType.income) {
           personalBalance += transaction.amount;
-        } else if (transaction.type == TransactionType.expense) {
+        } else if (transaction.type == TransactionType.expense ||
+            transaction.type == TransactionType.satDebt) {
           personalBalance -= transaction.amount;
         }
       } else if (transaction.source == MoneySource.work) {
         if (transaction.type == TransactionType.income) {
           workBalance += transaction.amount;
-        } else if (transaction.type == TransactionType.expense) {
+        } else if (transaction.type == TransactionType.expense ||
+            transaction.type == TransactionType.satDebt) {
           workBalance -= transaction.amount;
         }
       } else if (transaction.source == MoneySource.family) {
         if (transaction.type == TransactionType.income) {
           familyBalance += transaction.amount;
-        } else if (transaction.type == TransactionType.expense) {
+        } else if (transaction.type == TransactionType.expense ||
+            transaction.type == TransactionType.satDebt) {
           familyBalance -= transaction.amount;
         }
       }

@@ -173,9 +173,11 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
   }
 
   Widget _buildAmountCard() {
-    final amountColor = _selectedType == TransactionType.income 
-        ? Colors.green 
-        : Colors.red;
+    final amountColor = _selectedType == TransactionType.income
+        ? Colors.green
+        : _selectedType == TransactionType.satDebt
+            ? Colors.orange
+            : Colors.red;
         
     return Card(
       elevation: 2,
@@ -301,6 +303,15 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                     label: 'Gasto',
                     icon: Icons.arrow_upward,
                     color: Colors.red,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildTypeButton(
+                    type: TransactionType.satDebt,
+                    label: 'Deuda SAT',
+                    icon: Icons.gavel,
+                    color: Colors.orange,
                   ),
                 ),
               ],
@@ -600,40 +611,14 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Categoría',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _selectedCategory,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey[100],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
+            if (_selectedType != TransactionType.satDebt) ...[
+              Text(
+                'Categoría',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
               ),
-              items: (_selectedType == TransactionType.expense 
-                  ? _expenseCategories 
-                  : _incomeCategories).map((category) {
-                return DropdownMenuItem(
-                  value: category,
-                  child: Text(category),
-                );
-              }).toList(),
-              onChanged: (value) => setState(() {
-                    _selectedCategory = value;
-                    if (value != 'Deuda SAT') {
-                      _satDebtType = SatDebtType.none;
-                    }
-                  }),
-            ),
-            if (_selectedCategory == 'Deuda SAT') ...[
               const SizedBox(height: 12),
-              DropdownButtonFormField<SatDebtType>(
-                value: _satDebtType,
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.grey[100],
@@ -642,22 +627,68 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                     borderSide: BorderSide.none,
                   ),
                 ),
-                items: const [
-                  DropdownMenuItem(
-                    value: SatDebtType.iva,
-                    child: Text('IVA'),
-                  ),
-                  DropdownMenuItem(
-                    value: SatDebtType.isr,
-                    child: Text('ISR'),
-                  ),
-                ],
-                onChanged: (value) => setState(() => _satDebtType = value ?? SatDebtType.none),
+                items: (_selectedType == TransactionType.expense
+                        ? _expenseCategories
+                        : _incomeCategories)
+                    .map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) => setState(() {
+                      _selectedCategory = value;
+                      if (value != 'Deuda SAT') {
+                        _satDebtType = SatDebtType.none;
+                      }
+                    }),
               ),
+              if (_selectedCategory == 'Deuda SAT') ...[
+                const SizedBox(height: 12),
+                _buildSatDebtDropdown(),
+              ],
+            ] else ...[
+              Text(
+                'Tipo de Deuda SAT',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 12),
+              _buildSatDebtDropdown(),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSatDebtDropdown() {
+    return DropdownButtonFormField<SatDebtType>(
+      value: _satDebtType,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.grey[100],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      items: const [
+        DropdownMenuItem(
+          value: SatDebtType.iva,
+          child: Text('IVA'),
+        ),
+        DropdownMenuItem(
+          value: SatDebtType.isr,
+          child: Text('ISR'),
+        ),
+      ],
+      onChanged: (value) => setState(() => _satDebtType = value ?? SatDebtType.none),
+      validator: (value) {
+        if (value == null || value == SatDebtType.none) {
+          return 'Selecciona el tipo de deuda';
+        }
+        return null;
+      },
     );
   }
 
@@ -865,6 +896,17 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
 
   void _saveTransaction() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedType == TransactionType.satDebt &&
+        _satDebtType == SatDebtType.none) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecciona si la deuda es de IVA o ISR'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 

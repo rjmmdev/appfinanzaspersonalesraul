@@ -97,6 +97,37 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
       curve: Curves.easeInOut,
     );
     _animationController.forward();
+  } 
+
+  Widget _buildSatDebtDropdown() {
+    return DropdownButtonFormField<SatDebtType>(
+      value: _satDebtType,
+      decoration: const InputDecoration(
+        labelText: 'Tipo de Deuda SAT',
+      ),
+      items: const [
+        DropdownMenuItem(
+          value: SatDebtType.iva,
+          child: Text('IVA'),
+        ),
+        DropdownMenuItem(
+          value: SatDebtType.isr,
+          child: Text('ISR'),
+        ),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _satDebtType = value ?? SatDebtType.none;
+        });
+      },
+      validator: (value) {
+        if (_selectedType == TransactionType.satDebt &&
+            (value == null || value == SatDebtType.none)) {
+          return 'Selecciona el tipo de deuda';
+        }
+        return null;
+      },
+    );
   }
 
   @override
@@ -392,28 +423,11 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
             ),
             if (_selectedCategory == 'Deuda SAT') ...[
               const SizedBox(height: 16),
-              DropdownButtonFormField<SatDebtType>(
-                value: _satDebtType,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de Deuda SAT',
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: SatDebtType.iva,
-                    child: Text('IVA'),
-                  ),
-                  DropdownMenuItem(
-                    value: SatDebtType.isr,
-                    child: Text('ISR'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _satDebtType = value ?? SatDebtType.none;
-                  });
-                },
-              ),
+              _buildSatDebtDropdown(),
             ],
+            const SizedBox(height: 16),
+          ] else if (_selectedType == TransactionType.satDebt) ...[
+            _buildSatDebtDropdown(),
             const SizedBox(height: 16),
           ],
           InkWell(
@@ -539,6 +553,16 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
 
   void _saveTransaction() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedType == TransactionType.satDebt &&
+          _satDebtType == SatDebtType.none) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selecciona si la deuda es de IVA o ISR'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
       setState(() {
         _isLoading = true;
       });

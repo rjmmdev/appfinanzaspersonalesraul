@@ -749,14 +749,20 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                               leading: CircleAvatar(
                                 backgroundColor: transaction.type == TransactionType.income
                                     ? AppTheme.successColor.withOpacity(0.1)
-                                    : AppTheme.errorColor.withOpacity(0.1),
+                                    : transaction.type == TransactionType.satDebt
+                                        ? AppTheme.warningColor.withOpacity(0.1)
+                                        : AppTheme.errorColor.withOpacity(0.1),
                                 child: Icon(
                                   transaction.type == TransactionType.income
                                       ? Icons.arrow_downward
-                                      : Icons.arrow_upward,
+                                      : transaction.type == TransactionType.satDebt
+                                          ? Icons.gavel
+                                          : Icons.arrow_upward,
                                   color: transaction.type == TransactionType.income
                                       ? AppTheme.successColor
-                                      : AppTheme.errorColor,
+                                      : transaction.type == TransactionType.satDebt
+                                          ? AppTheme.warningColor
+                                          : AppTheme.errorColor,
                                   size: 20,
                                 ),
                               ),
@@ -779,13 +785,14 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '${transaction.type == TransactionType.expense ? '-' : '+'}'
-                                    '${currencyFormat.format(transaction.amount)}',
+                                    '${transaction.type == TransactionType.income ? '+' : '-'}${currencyFormat.format(transaction.amount)}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: transaction.type == TransactionType.income
                                           ? AppTheme.successColor
-                                          : AppTheme.errorColor,
+                                          : transaction.type == TransactionType.satDebt
+                                              ? AppTheme.warningColor
+                                              : AppTheme.errorColor,
                                     ),
                                   ),
                                   if (transaction.category != null)
