@@ -46,33 +46,43 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
   Widget build(BuildContext context) {
     final results = _results;
 
+    final List<Widget> children = [
+      _buildSearchField(),
+      _buildFilterChips(),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Text(
+          'Resultados: \${results.length}',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+      ),
+      const Divider(height: 16),
+    ];
+
+    if (query.isEmpty) {
+      children.add(_buildInfoSection());
+    }
+
+    if (results.isEmpty) {
+      children.add(const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: Text('No se encontraron gastos.')),
+      ));
+    } else {
+      for (final expense in results) {
+        children.add(Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: _buildResultCard(expense),
+        ));
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Guía CFDI'),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSearchField(),
-          _buildFilterChips(),
-          if (query.isEmpty) _buildInfoSection(),
-          Expanded(
-            child: results.isEmpty
-                ? const Center(child: Text('No se encontraron gastos.'))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    itemCount: results.length,
-                    itemBuilder: (context, index) {
-                      final expense = results[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildResultCard(expense),
-                      );
-                    },
-                  ),
-          ),
-        ],
+      body: ListView(
+        children: children,
       ),
     );
   }
@@ -169,15 +179,20 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
     final bool deductible = expense['deductible'] as bool;
     final iconColor =
         deductible ? AppTheme.successColor : AppTheme.errorColor;
+    final IconData icon = expense['icon'] as IconData? ?? Icons.receipt_long;
     return ModernCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                deductible ? Icons.check_circle : Icons.cancel,
-                color: iconColor,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 20),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -193,13 +208,23 @@ class _CFDIGuideScreenState extends State<CFDIGuideScreen> {
                   color: iconColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  deductible ? 'Acreditable' : 'No acreditable',
-                  style: TextStyle(
-                    color: iconColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      deductible ? Icons.check_circle : Icons.cancel,
+                      color: iconColor,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      deductible ? 'Acreditable' : 'No acreditable',
+                      style: TextStyle(
+                        color: iconColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
