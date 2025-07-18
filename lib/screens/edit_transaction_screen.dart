@@ -101,7 +101,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
 
   Widget _buildSatDebtDropdown() {
     return DropdownButtonFormField<SatDebtType>(
-      value: _satDebtType,
+      value: _satDebtType == SatDebtType.none ? null : _satDebtType,
       decoration: const InputDecoration(
         labelText: 'Tipo de Deuda SAT',
       ),
