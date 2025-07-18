@@ -663,7 +663,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
 
   Widget _buildSatDebtDropdown() {
     return DropdownButtonFormField<SatDebtType>(
-      value: _satDebtType,
+      value: _satDebtType == SatDebtType.none ? null : _satDebtType,
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.grey[100],
