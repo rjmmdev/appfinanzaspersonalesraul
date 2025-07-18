@@ -32,6 +32,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
   TransactionType _selectedType = TransactionType.expense;
   bool _hasIva = false;
   bool _isDeductibleIva = false;
+  SatDebtType _satDebtType = SatDebtType.none;
   String? _selectedCategory;
   String? _selectedUsoCFDI;
   DateTime _selectedDate = DateTime.now();
@@ -45,6 +46,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
     'Salud',
     'Educación',
     'Compras',
+    'Deuda SAT',
     'Otros',
   ];
 
@@ -82,6 +84,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
     _hasIva = widget.transaction.hasIva;
     _isDeductibleIva = widget.transaction.isDeductibleIva;
     _selectedCategory = widget.transaction.category;
+    _satDebtType = widget.transaction.satDebtType;
     _selectedUsoCFDI = widget.transaction.usoCFDI;
     _selectedDate = widget.transaction.transactionDate;
     
@@ -381,9 +384,36 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
               onChanged: (value) {
                 setState(() {
                   _selectedCategory = value;
+                  if (value != 'Deuda SAT') {
+                    _satDebtType = SatDebtType.none;
+                  }
                 });
               },
             ),
+            if (_selectedCategory == 'Deuda SAT') ...[
+              const SizedBox(height: 16),
+              DropdownButtonFormField<SatDebtType>(
+                value: _satDebtType,
+                decoration: const InputDecoration(
+                  labelText: 'Tipo de Deuda SAT',
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: SatDebtType.iva,
+                    child: Text('IVA'),
+                  ),
+                  DropdownMenuItem(
+                    value: SatDebtType.isr,
+                    child: Text('ISR'),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _satDebtType = value ?? SatDebtType.none;
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: 16),
           ],
           InkWell(
@@ -523,6 +553,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
           isDeductibleIva: _isDeductibleIva,
           type: _selectedType,
           source: widget.transaction.source,
+          satDebtType: _satDebtType,
           category: _selectedCategory,
           usoCFDI: _selectedUsoCFDI,
           transactionDate: _selectedDate,
