@@ -68,3 +68,7 @@ La aplicación utiliza un **sistema dual de persistencia**:
    - Intereses diarios para cuentas de inversión
    - Actualización de balances al registrar transacciones
    - Totales y estadísticas en tiempo real
+5. **Actualización diaria en Firebase**
+   - Función programada `applyDailyInterest` se ejecuta a las 00:10 AM
+   - Calcula y aplica intereses en las cuentas con tasa anual
+   - Guarda registros en `daily_interest_records` y actualiza balances
