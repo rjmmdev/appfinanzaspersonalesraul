@@ -8,6 +8,17 @@ class CFDIGuideScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DeductibleSearchScreen(),
+            ),
+          );
+        },
+        child: const Icon(Icons.search),
+      ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -106,6 +117,15 @@ class CFDIGuideScreen extends StatelessWidget {
                     content:
                         'Los pagos a empleados no generan IVA acreditable, pero son deducibles de ISR si cumples con las obligaciones de n\u00f3mina.',
                     color: Colors.green,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(
+                    context,
+                    icon: Icons.home_repair_service,
+                    title: 'Prestaci\u00f3n de servicios',
+                    content:
+                        'Contratar servicios para tu negocio genera IVA acreditable siempre que cuentes con CFDI y est\u00e9 relacionado con tu actividad.',
+                    color: Colors.purple,
                   ),
                   const SizedBox(height: 16),
                   _buildInfoCard(
