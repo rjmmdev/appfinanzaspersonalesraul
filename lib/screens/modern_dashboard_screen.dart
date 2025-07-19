@@ -50,6 +50,8 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               const SizedBox(height: 16),
               _buildQuickStats(provider),
               const SizedBox(height: 16),
+              _buildDebtBreakdownCard(provider),
+              const SizedBox(height: 16),
               _buildAccountsSection(provider),
               const SizedBox(height: 16),
               _buildCreditCardsSection(provider),
@@ -289,6 +291,50 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDebtBreakdownCard(FinanceProvider provider) {
+    final debt = provider.getDebtBreakdown();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Desglose de Deuda',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            _buildDebtRow('Tarjetas de Crédito', debt['creditCards'] ?? 0),
+            _buildDebtRow('Cuentas de Crédito', debt['creditAccounts'] ?? 0),
+            _buildDebtRow('Deuda SAT', debt['satDebt'] ?? 0),
+            const Divider(),
+            _buildDebtRow('Total', debt['total'] ?? 0, isBold: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebtRow(String label, double amount, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(label),
+          const Spacer(),
+          Text(
+            currencyFormat.format(amount),
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: Colors.red,
+            ),
+          ),
+        ],
       ),
     );
   }
