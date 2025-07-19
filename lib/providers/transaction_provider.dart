@@ -18,9 +18,7 @@ class TransactionProvider extends ChangeNotifier {
 
   double get totalExpenses {
     return _transactions
-        .where((t) =>
-            t.type == TransactionType.expense ||
-            t.type == TransactionType.satDebt)
+        .where((t) => t.type == TransactionType.expense)
         .fold(0, (sum, t) => sum + t.totalAmount);
   }
 
@@ -96,8 +94,7 @@ class TransactionProvider extends ChangeNotifier {
     final Map<String, double> categoryTotals = {};
     
     for (final transaction in _transactions) {
-      if ((transaction.type == TransactionType.expense ||
-              transaction.type == TransactionType.satDebt) &&
+      if (transaction.type == TransactionType.expense &&
           transaction.category != null) {
         categoryTotals[transaction.category!] =
             (categoryTotals[transaction.category!] ?? 0) +

@@ -619,6 +619,36 @@ class FirebaseService {
       // ignore
     }
   }
+
+  Future<double> getSatDebt() async {
+    try {
+      final doc = await _firestore
+          .collection(_systemMetadataCollection)
+          .doc('sat_debt')
+          .get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        return (data['amount'] ?? 0).toDouble();
+      }
+      return 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<void> setSatDebt(double amount) async {
+    try {
+      await _firestore
+          .collection(_systemMetadataCollection)
+          .doc('sat_debt')
+          .set({
+            'amount': amount,
+            'updatedAt': DateTime.now().toIso8601String(),
+          }, SetOptions(merge: true));
+    } catch (e) {
+      // ignore
+    }
+  }
   
   // Método para obtener el historial de intereses
   Future<List<DailyInterestRecord>> getInterestHistory(int accountId) async {
