@@ -541,4 +541,31 @@ class FinanceProvider extends ChangeNotifier {
     return accountBalances;
   }
 
+  /// Obtiene un desglose detallado de las deudas actuales.
+  /// - `creditAccounts`: Deuda proveniente de cuentas de tipo crédito
+  ///   (balances negativos).
+  /// - `creditCards`: Deuda total en tarjetas de crédito registradas.
+  /// - `satDebt`: Deuda acumulada con el SAT.
+  /// - `total`: Suma de todas las deudas anteriores.
+  Map<String, double> getDebtBreakdown() {
+    double creditAccountDebt = 0;
+    double creditCardDebt = 0;
+
+    for (final account in _accounts) {
+      if (account.accountType == AccountType.credit && account.balance < 0) {
+        creditAccountDebt += -account.balance;
+      }
+    }
+
+    creditCardDebt =
+        _creditCards.fold(0, (sum, card) => sum + card.currentBalance);
+
+    return {
+      'creditAccounts': creditAccountDebt,
+      'creditCards': creditCardDebt,
+      'satDebt': _satDebt,
+      'total': creditAccountDebt + creditCardDebt + _satDebt,
+    };
+  }
+
 }
