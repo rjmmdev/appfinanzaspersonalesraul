@@ -287,55 +287,60 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
   }
 
   Widget _buildTransactionTypeCard() {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tipo de transacción',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = (constraints.maxWidth - 16) / 3;
+        return Card(
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 100,
-                  child: _buildTypeButton(
-                    type: TransactionType.income,
-                    label: 'Ingreso',
-                    icon: Icons.arrow_downward,
-                    color: Colors.green,
-                  ),
+                Text(
+                  'Tipo de transacción',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
                 ),
-                SizedBox(
-                  width: 100,
-                  child: _buildTypeButton(
-                    type: TransactionType.expense,
-                    label: 'Gasto',
-                    icon: Icons.arrow_upward,
-                    color: Colors.red,
-                  ),
-                ),
-                SizedBox(
-                  width: 100,
-                  child: _buildTypeButton(
-                    type: TransactionType.satDebt,
-                    label: 'Deuda SAT',
-                    icon: Icons.gavel,
-                    color: Colors.orange,
-                  ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    SizedBox(
+                      width: itemWidth,
+                      child: _buildTypeButton(
+                        type: TransactionType.income,
+                        label: 'Ingreso',
+                        icon: Icons.arrow_downward,
+                        color: Colors.green,
+                      ),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: _buildTypeButton(
+                        type: TransactionType.expense,
+                        label: 'Gasto',
+                        icon: Icons.arrow_upward,
+                        color: Colors.red,
+                      ),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: _buildTypeButton(
+                        type: TransactionType.satDebt,
+                        label: 'Deuda SAT',
+                        icon: Icons.gavel,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -533,7 +538,15 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                       ),
                     )
                     .toList(),
-                onChanged: (v) => setState(() => _selectedDebtId = v),
+                onChanged: (v) {
+                  setState(() {
+                    _selectedDebtId = v;
+                    if (v != null) {
+                      final debt = debts.firstWhere((d) => d.id == v);
+                      _amountController.text = debt.amount.toStringAsFixed(2);
+                    }
+                  });
+                },
               ),
           ],
         ),
@@ -1012,54 +1025,69 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
       final provider = context.read<FinanceProvider>();
       final amount = double.parse(_amountController.text);
 
-      await provider.addTransaction(
-        accountId: _selectedType == TransactionType.satDebt
-            ? null
-            : _selectedAccountId!,
-        description: _descriptionController.text.trim(),
-        amount: amount,
-        hasIva: _hasIva,
-        isDeductibleIva: _isDeductibleIva,
-        type: _selectedType,
-        source: _selectedSource,
-        satDebtType: _satDebtType,
-        category: _selectedCategory,
-        usoCFDI: _selectedUsoCFDI,
-        transactionDate: _selectedDate,
-      );
-
-      if (_isEcoce && _selectedType == TransactionType.income) {
-        final subtotal = amount / 1.16;
-        final iva = amount - subtotal;
-        final ivaRetenido = iva * 2 / 3;
-        final ivaPagar = iva - ivaRetenido;
-        final isr = subtotal * 0.0125;
+      if (_isPayingDebt && _selectedDebtId != null) {
+        final debt =
+            provider.transactions.firstWhere((t) => t.id == _selectedDebtId);
 
         await provider.addTransaction(
-          accountId: null,
-          description: 'IVA por ingreso ECOCE',
-          amount: ivaPagar,
+          accountId: _selectedAccountId!,
+          description: _descriptionController.text.trim(),
+          amount: amount,
           hasIva: false,
           isDeductibleIva: false,
           type: TransactionType.satDebt,
-          source: MoneySource.work,
-          satDebtType: SatDebtType.iva,
+          source: _selectedSource,
+          satDebtType: debt.satDebtType,
           category: 'Deuda SAT',
+          transactionDate: _selectedDate,
+        );
+      } else {
+        await provider.addTransaction(
+          accountId: _selectedType == TransactionType.satDebt
+              ? null
+              : _selectedAccountId!,
+          description: _descriptionController.text.trim(),
+          amount: amount,
+          hasIva: _hasIva,
+          isDeductibleIva: _isDeductibleIva,
+          type: _selectedType,
+          source: _selectedSource,
+          satDebtType: _satDebtType,
+          category: _selectedCategory,
+          usoCFDI: _selectedUsoCFDI,
           transactionDate: _selectedDate,
         );
 
-        await provider.addTransaction(
-          accountId: null,
-          description: 'ISR RESICO ingreso ECOCE',
-          amount: isr,
-          hasIva: false,
-          isDeductibleIva: false,
-          type: TransactionType.satDebt,
-          source: MoneySource.work,
-          satDebtType: SatDebtType.isr,
-          category: 'Deuda SAT',
-          transactionDate: _selectedDate,
-        );
+        if (_isEcoce && _selectedType == TransactionType.income) {
+          final ivaDebt = amount * 0.16;
+          final isrDebt = amount * 0.0125;
+
+          await provider.addTransaction(
+            accountId: null,
+            description: 'IVA ingreso ECOCE',
+            amount: ivaDebt,
+            hasIva: false,
+            isDeductibleIva: false,
+            type: TransactionType.satDebt,
+            source: MoneySource.work,
+            satDebtType: SatDebtType.iva,
+            category: 'Deuda SAT',
+            transactionDate: _selectedDate,
+          );
+
+          await provider.addTransaction(
+            accountId: null,
+            description: 'ISR ingreso ECOCE',
+            amount: isrDebt,
+            hasIva: false,
+            isDeductibleIva: false,
+            type: TransactionType.satDebt,
+            source: MoneySource.work,
+            satDebtType: SatDebtType.isr,
+            category: 'Deuda SAT',
+            transactionDate: _selectedDate,
+          );
+        }
       }
 
       if (mounted) {
