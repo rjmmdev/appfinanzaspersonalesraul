@@ -84,7 +84,7 @@ class FinanceProvider extends ChangeNotifier {
     double totalDebt = totalCreditDebt + totalCreditCardDebt;
 
     // Deudas con Hacienda
-    double satDebt = getSatDebtSummary()['total'];
+    double satDebt = getSatDebtSummary()['total'] ?? 0;
 
     _totalBalances = {
       'totalInAccounts': totalInAccounts,
