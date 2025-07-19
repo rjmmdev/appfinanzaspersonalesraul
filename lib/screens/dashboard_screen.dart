@@ -172,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSatDebtCard(FinanceProvider provider) {
-    final debts = provider.getSatDebtSummary();
+    final satDebt = provider.satDebt;
     return Card(
       elevation: 4,
       child: Padding(
@@ -181,38 +181,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Deudas SAT',
+              'Deuda SAT',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('IVA:'),
-                Text(
-                  currencyFormat.format(debts['iva'] ?? 0),
-                  style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('ISR:'),
-                Text(
-                  currencyFormat.format(debts['isr'] ?? 0),
-                  style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
                 const Text('Total:'),
                 Text(
-                  currencyFormat.format(debts['total'] ?? 0),
+                  currencyFormat.format(satDebt),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
