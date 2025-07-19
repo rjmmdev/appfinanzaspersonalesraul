@@ -10,6 +10,7 @@ class FinanceProvider extends ChangeNotifier {
   List<Account> _accounts = [];
   List<Transaction> _transactions = [];
   List<CreditCard> _creditCards = [];
+  double _satDebt = 0;
   Map<String, double> _totalBalances = {
     'totalInAccounts': 0,
     'totalDebt': 0,
@@ -22,12 +23,14 @@ class FinanceProvider extends ChangeNotifier {
   List<Transaction> get transactions => _transactions;
   List<CreditCard> get creditCards => _creditCards;
   Map<String, double> get totalBalances => _totalBalances;
+  double get satDebt => _satDebt;
 
   Future<void> loadData() async {
     await Future.wait([
       loadAccounts(),
       loadTransactions(),
       loadCreditCards(),
+      loadSatDebt(),
     ]);
     await updateTotalBalances();
   }
@@ -62,6 +65,26 @@ class FinanceProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> loadSatDebt() async {
+    try {
+      _satDebt = await _firebaseService.getSatDebt();
+      notifyListeners();
+    } catch (e) {
+      _satDebt = 0;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setSatDebt(double amount) async {
+    try {
+      await _firebaseService.setSatDebt(amount);
+      _satDebt = amount;
+      await updateTotalBalances();
+    } catch (e) {
+      // ignore
+    }
+  }
+
   Future<void> updateTotalBalances() async {
     double totalInAccounts = 0;
     double totalCreditDebt = 0;
@@ -83,8 +106,8 @@ class FinanceProvider extends ChangeNotifier {
         _creditCards.fold(0, (sum, card) => sum + card.currentBalance);
     double totalDebt = totalCreditDebt + totalCreditCardDebt;
 
-    // Deudas con Hacienda
-    double satDebt = getSatDebtSummary()['total'] ?? 0;
+    // Deuda con Hacienda
+    double satDebt = _satDebt;
 
     _totalBalances = {
       'totalInAccounts': totalInAccounts,
@@ -129,7 +152,6 @@ class FinanceProvider extends ChangeNotifier {
     required bool isDeductibleIva,
     required TransactionType type,
     required MoneySource source,
-    SatDebtType satDebtType = SatDebtType.none,
     String? category,
     String? usoCFDI,
     DateTime? transactionDate,
@@ -153,7 +175,6 @@ class FinanceProvider extends ChangeNotifier {
       isDeductibleIva: isDeductibleIva,
       type: type,
       category: category,
-      satDebtType: satDebtType,
       source: source,
       usoCFDI: usoCFDI,
       transactionDate: transactionDate ?? DateTime.now(),
@@ -162,14 +183,17 @@ class FinanceProvider extends ChangeNotifier {
 
     final savedTransaction = await _firebaseService.insertTransaction(transaction);
 
+    if (type == TransactionType.income) {
+      await setSatDebt(_satDebt + amount * 0.16);
+    }
+
     // Update account balance only if an account was provided
     if (accountId != null && accountId != -1) {
       final account = _accounts.firstWhere((a) => a.id == accountId);
       double newBalance = account.balance;
       if (type == TransactionType.income) {
         newBalance += amount;
-      } else if (type == TransactionType.expense ||
-          type == TransactionType.satDebt) {
+      } else if (type == TransactionType.expense) {
         newBalance -= amount;
       }
 
@@ -249,8 +273,7 @@ class FinanceProvider extends ChangeNotifier {
     if (account != null) {
       if (transaction.type == TransactionType.income) {
         newBalance -= transaction.amount; // Revertir ingreso
-      } else if (transaction.type == TransactionType.expense ||
-          transaction.type == TransactionType.satDebt) {
+      } else if (transaction.type == TransactionType.expense) {
         newBalance += transaction.amount; // Revertir gasto
       }
     }
@@ -277,7 +300,6 @@ class FinanceProvider extends ChangeNotifier {
     required bool isDeductibleIva,
     required TransactionType type,
     required MoneySource source,
-    SatDebtType satDebtType = SatDebtType.none,
     String? category,
     String? usoCFDI,
     DateTime? transactionDate,
@@ -293,8 +315,7 @@ class FinanceProvider extends ChangeNotifier {
     if (account != null) {
       if (oldTransaction.type == TransactionType.income) {
         newBalance -= oldTransaction.amount;
-      } else if (oldTransaction.type == TransactionType.expense ||
-          oldTransaction.type == TransactionType.satDebt) {
+      } else if (oldTransaction.type == TransactionType.expense) {
         newBalance += oldTransaction.amount;
       }
     }
@@ -303,8 +324,7 @@ class FinanceProvider extends ChangeNotifier {
     if (account != null) {
       if (type == TransactionType.income) {
         newBalance += amount;
-      } else if (type == TransactionType.expense ||
-          type == TransactionType.satDebt) {
+      } else if (type == TransactionType.expense) {
         newBalance -= amount;
       }
     }
@@ -327,7 +347,6 @@ class FinanceProvider extends ChangeNotifier {
       isDeductibleIva: isDeductibleIva,
       type: type,
       category: category,
-      satDebtType: satDebtType,
       source: source,
       usoCFDI: usoCFDI,
       transactionDate: transactionDate ?? oldTransaction.transactionDate,
@@ -448,22 +467,19 @@ class FinanceProvider extends ChangeNotifier {
       if (transaction.source == MoneySource.personal) {
         if (transaction.type == TransactionType.income) {
           personalBalance += transaction.amount;
-        } else if (transaction.type == TransactionType.expense ||
-            transaction.type == TransactionType.satDebt) {
+        } else if (transaction.type == TransactionType.expense) {
           personalBalance -= transaction.amount;
         }
       } else if (transaction.source == MoneySource.work) {
         if (transaction.type == TransactionType.income) {
           workBalance += transaction.amount;
-        } else if (transaction.type == TransactionType.expense ||
-            transaction.type == TransactionType.satDebt) {
+        } else if (transaction.type == TransactionType.expense) {
           workBalance -= transaction.amount;
         }
       } else if (transaction.source == MoneySource.family) {
         if (transaction.type == TransactionType.income) {
           familyBalance += transaction.amount;
-        } else if (transaction.type == TransactionType.expense ||
-            transaction.type == TransactionType.satDebt) {
+        } else if (transaction.type == TransactionType.expense) {
           familyBalance -= transaction.amount;
         }
       }
@@ -525,33 +541,4 @@ class FinanceProvider extends ChangeNotifier {
     return accountBalances;
   }
 
-  // Obtener resumen de deudas SAT pendientes
-  Map<String, double> getSatDebtSummary() {
-    double ivaDebt = 0;
-    double isrDebt = 0;
-
-    for (final t in _transactions) {
-      if (t.type == TransactionType.satDebt) {
-        if (t.accountId == -1) {
-          if (t.satDebtType == SatDebtType.iva) {
-            ivaDebt += t.amount;
-          } else if (t.satDebtType == SatDebtType.isr) {
-            isrDebt += t.amount;
-          }
-        } else {
-          if (t.satDebtType == SatDebtType.iva) {
-            ivaDebt -= t.amount;
-          } else if (t.satDebtType == SatDebtType.isr) {
-            isrDebt -= t.amount;
-          }
-        }
-      }
-    }
-
-    return {
-      'iva': ivaDebt,
-      'isr': isrDebt,
-      'total': ivaDebt + isrDebt,
-    };
-  }
 }

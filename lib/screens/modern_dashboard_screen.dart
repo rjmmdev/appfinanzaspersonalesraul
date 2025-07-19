@@ -187,6 +187,47 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                     isDebt: true,
                   ),
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final controller = TextEditingController(
+                          text: provider.satDebt.toStringAsFixed(2));
+                      final newVal = await showDialog<double>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Editar deuda SAT'),
+                          content: TextField(
+                            controller: controller,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Monto'),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancelar'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(
+                                  context, double.tryParse(controller.text)),
+                              child: const Text('Guardar'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (newVal != null) {
+                        await provider.setSatDebt(newVal);
+                      }
+                    },
+                    child: _buildBalanceItem(
+                      'Deuda SAT',
+                      provider.satDebt,
+                      Icons.gavel,
+                      isDebt: true,
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
@@ -749,20 +790,14 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                               leading: CircleAvatar(
                                 backgroundColor: transaction.type == TransactionType.income
                                     ? AppTheme.successColor.withOpacity(0.1)
-                                    : transaction.type == TransactionType.satDebt
-                                        ? AppTheme.warningColor.withOpacity(0.1)
-                                        : AppTheme.errorColor.withOpacity(0.1),
+                                    : AppTheme.errorColor.withOpacity(0.1),
                                 child: Icon(
                                   transaction.type == TransactionType.income
                                       ? Icons.arrow_downward
-                                      : transaction.type == TransactionType.satDebt
-                                          ? Icons.gavel
-                                          : Icons.arrow_upward,
+                                      : Icons.arrow_upward,
                                   color: transaction.type == TransactionType.income
                                       ? AppTheme.successColor
-                                      : transaction.type == TransactionType.satDebt
-                                          ? AppTheme.warningColor
-                                          : AppTheme.errorColor,
+                                      : AppTheme.errorColor,
                                   size: 20,
                                 ),
                               ),
@@ -788,11 +823,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                                     '${transaction.type == TransactionType.income ? '+' : '-'}${currencyFormat.format(transaction.amount)}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: transaction.type == TransactionType.income
+                                  color: transaction.type == TransactionType.income
                                           ? AppTheme.successColor
-                                          : transaction.type == TransactionType.satDebt
-                                              ? AppTheme.warningColor
-                                              : AppTheme.errorColor,
+                                          : AppTheme.errorColor,
                                     ),
                                   ),
                                   if (transaction.category != null)

@@ -26,10 +26,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
   MoneySource _selectedSource = MoneySource.personal;
   bool _hasIva = false;
   bool _isDeductibleIva = false;
-  bool _isEcoce = false;
-  bool _isPayingDebt = false;
-  int? _selectedDebtId;
-  SatDebtType _satDebtType = SatDebtType.none;
+  bool _isEcoce = false; // Removed usage
   String? _selectedCategory;
   String? _selectedUsoCFDI;
   DateTime _selectedDate = DateTime.now();
@@ -53,7 +50,6 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
     'Seguros',
     'Ahorro e Inversión',
     'Deudas',
-    'Deuda SAT',
     'Otros Gastos',
   ];
 
@@ -138,18 +134,11 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                 
                 // Money Source
                 _buildMoneySourceCard(),
-                if (_selectedType == TransactionType.income &&
-                    _selectedSource == MoneySource.work) ...[
-                  const SizedBox(height: 16),
-                  _buildEcoceCard(),
-                ],
                 const SizedBox(height: 16),
-                
+
                 // Account Selection
-                if (_selectedType != TransactionType.satDebt) ...[
-                  _buildAccountCard(provider),
-                  const SizedBox(height: 16),
-                ],
+                _buildAccountCard(provider),
+                const SizedBox(height: 16),
                 
                 // Description
                 _buildDescriptionCard(),
@@ -157,10 +146,6 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                 
                 // Category
                 _buildCategoryCard(),
-                if (_selectedType == TransactionType.expense) ...[
-                  const SizedBox(height: 16),
-                  _buildPayDebtCard(provider),
-                ],
                 const SizedBox(height: 16),
                 
                 // Date
@@ -189,9 +174,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
   Widget _buildAmountCard() {
     final amountColor = _selectedType == TransactionType.income
         ? Colors.green
-        : _selectedType == TransactionType.satDebt
-            ? Colors.orange
-            : Colors.red;
+        : Colors.red;
         
     return Card(
       elevation: 2,
@@ -261,10 +244,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
     final amount = double.tryParse(_amountController.text) ?? 0;
     final subtotal = amount / 1.16;
     final iva = amount - subtotal;
-    final isEcoceIncome = _isEcoce && _selectedType == TransactionType.income;
-    final isrDebt = amount * 0.0125;
-    final totalDebt = iva + (isEcoceIncome ? isrDebt : 0);
-    final netIncome = amount - totalDebt;
+    final netIncome = amount - iva;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -273,10 +253,10 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(isEcoceIncome ? 'Ingreso neto:' : 'Subtotal:',
+              Text('Subtotal:',
                   style: TextStyle(color: Colors.grey[600])),
               Text(
-                currencyFormat.format(isEcoceIncome ? netIncome : subtotal),
+                currencyFormat.format(netIncome),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
@@ -285,12 +265,9 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text('IVA (16%):', style: TextStyle(color: Colors.grey[600])),
               Text(
-                isEcoceIncome ? 'Deuda a hacienda:' : 'IVA (16%):',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              Text(
-                currencyFormat.format(isEcoceIncome ? totalDebt : iva),
+                currencyFormat.format(iva),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
@@ -337,15 +314,6 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                         label: 'Gasto',
                         icon: Icons.arrow_upward,
                         color: Colors.red,
-                      ),
-                    ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildTypeButton(
-                        type: TransactionType.satDebt,
-                        label: 'Deuda SAT',
-                        icon: Icons.gavel,
-                        color: Colors.orange,
                       ),
                     ),
                   ],
@@ -463,9 +431,6 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
     return InkWell(
       onTap: () => setState(() {
             _selectedSource = source;
-            if (source != MoneySource.work) {
-              _isEcoce = false;
-            }
           }),
       borderRadius: BorderRadius.circular(8),
       child: Container(
@@ -496,77 +461,6 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
     );
   }
 
-  Widget _buildEcoceCard() {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SwitchListTile(
-        title: const Text('¿Ingreso de ECOCE?'),
-        value: _isEcoce,
-        onChanged: (value) {
-          setState(() {
-            _isEcoce = value;
-            if (value) {
-              _hasIva = true;
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildPayDebtCard(FinanceProvider provider) {
-    final debts = provider.transactions
-        .where((t) =>
-            t.type == TransactionType.satDebt && t.accountId == -1)
-        .toList();
-
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SwitchListTile(
-              title: const Text('¿Pagar deuda SAT?'),
-              value: _isPayingDebt,
-              onChanged: (v) {
-                setState(() {
-                  _isPayingDebt = v;
-                  if (!v) _selectedDebtId = null;
-                });
-              },
-            ),
-            if (_isPayingDebt)
-              DropdownButtonFormField<int>(
-                value: _selectedDebtId,
-                decoration: const InputDecoration(labelText: 'Deuda'),
-                items: debts
-                    .map(
-                      (d) => DropdownMenuItem(
-                        value: d.id,
-                        child: Text(
-                            '${d.description} - ${currencyFormat.format(d.amount)}'),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    _selectedDebtId = v;
-                    if (v != null) {
-                      final debt = debts.firstWhere((d) => d.id == v);
-                      _amountController.text = debt.amount.toStringAsFixed(2);
-                    }
-                  });
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildAccountCard(FinanceProvider provider) {
     return Card(
@@ -595,7 +489,7 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               ),
               validator: (value) {
-                if (_selectedType != TransactionType.satDebt && value == null) {
+                if (value == null) {
                   return 'Por favor selecciona una cuenta';
                 }
                 return null;
@@ -724,13 +618,12 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_selectedType != TransactionType.satDebt) ...[
-              Text(
-                'Categoría',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
+            Text(
+              'Categoría',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
                 value: _selectedCategory,
                 decoration: InputDecoration(
                   filled: true,
@@ -751,57 +644,11 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
                 }).toList(),
                 onChanged: (value) => setState(() {
                       _selectedCategory = value;
-                      if (value != 'Deuda SAT') {
-                        _satDebtType = SatDebtType.none;
-                      }
                     }),
               ),
-              if (_selectedCategory == 'Deuda SAT') ...[
-                const SizedBox(height: 12),
-                _buildSatDebtDropdown(),
-              ],
-            ] else ...[
-              Text(
-                'Tipo de Deuda SAT',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 12),
-              _buildSatDebtDropdown(),
-            ],
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSatDebtDropdown() {
-    return DropdownButtonFormField<SatDebtType>(
-      value: _satDebtType == SatDebtType.none ? null : _satDebtType,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      items: const [
-        DropdownMenuItem(
-          value: SatDebtType.iva,
-          child: Text('IVA'),
-        ),
-        DropdownMenuItem(
-          value: SatDebtType.isr,
-          child: Text('ISR'),
-        ),
-      ],
-      onChanged: (value) => setState(() => _satDebtType = value ?? SatDebtType.none),
-      validator: (value) {
-        if (value == null || value == SatDebtType.none) {
-          return 'Selecciona el tipo de deuda';
-        }
-        return null;
-      },
     );
   }
 
@@ -1008,25 +855,10 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
   }
 
   void _saveTransaction() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (_selectedType == TransactionType.satDebt &&
-        _satDebtType == SatDebtType.none) {
+    if (!_formKey.currentState!.validate() || _selectedAccountId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Selecciona si la deuda es de IVA o ISR'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (_selectedType != TransactionType.satDebt && _selectedAccountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona una cuenta'),
+          content: Text('Por favor completa todos los campos'),
           backgroundColor: Colors.red,
         ),
       );
@@ -1039,70 +871,18 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
       final provider = context.read<FinanceProvider>();
       final amount = double.parse(_amountController.text);
 
-      if (_isPayingDebt && _selectedDebtId != null) {
-        final debt =
-            provider.transactions.firstWhere((t) => t.id == _selectedDebtId);
-
-        await provider.addTransaction(
-          accountId: _selectedAccountId!,
-          description: _descriptionController.text.trim(),
-          amount: amount,
-          hasIva: false,
-          isDeductibleIva: false,
-          type: TransactionType.satDebt,
-          source: _selectedSource,
-          satDebtType: debt.satDebtType,
-          category: 'Deuda SAT',
-          transactionDate: _selectedDate,
-        );
-      } else {
-        await provider.addTransaction(
-          accountId: _selectedType == TransactionType.satDebt
-              ? null
-              : _selectedAccountId!,
-          description: _descriptionController.text.trim(),
-          amount: amount,
-          hasIva: _hasIva,
-          isDeductibleIva: _isDeductibleIva,
-          type: _selectedType,
-          source: _selectedSource,
-          satDebtType: _satDebtType,
-          category: _selectedCategory,
-          usoCFDI: _selectedUsoCFDI,
-          transactionDate: _selectedDate,
-        );
-
-        if (_isEcoce && _selectedType == TransactionType.income) {
-          final ivaDebt = amount * 0.16;
-          final isrDebt = amount * 0.0125;
-
-          await provider.addTransaction(
-            accountId: null,
-            description: 'IVA ingreso ECOCE',
-            amount: ivaDebt,
-            hasIva: false,
-            isDeductibleIva: false,
-            type: TransactionType.satDebt,
-            source: MoneySource.work,
-            satDebtType: SatDebtType.iva,
-            category: 'Deuda SAT',
-            transactionDate: _selectedDate,
-          );
-
-          await provider.addTransaction(
-            accountId: null,
-            description: 'ISR ingreso ECOCE',
-            amount: isrDebt,
-            hasIva: false,
-            isDeductibleIva: false,
-            type: TransactionType.satDebt,
-            source: MoneySource.work,
-            satDebtType: SatDebtType.isr,
-            category: 'Deuda SAT',
-            transactionDate: _selectedDate,
-          );
-        }
-      }
+      await provider.addTransaction(
+        accountId: _selectedAccountId!,
+        description: _descriptionController.text.trim(),
+        amount: amount,
+        hasIva: _hasIva,
+        isDeductibleIva: _isDeductibleIva,
+        type: _selectedType,
+        source: _selectedSource,
+        category: _selectedCategory,
+        usoCFDI: _selectedUsoCFDI,
+        transactionDate: _selectedDate,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

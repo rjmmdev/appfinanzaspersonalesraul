@@ -46,7 +46,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
     'Salud',
     'Educación',
     'Compras',
-    'Deuda SAT',
     'Otros',
   ];
 
@@ -121,8 +120,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
         });
       },
       validator: (value) {
-        if (_selectedType == TransactionType.satDebt &&
-            (value == null || value == SatDebtType.none)) {
+        if (value == null || value == SatDebtType.none) {
           return 'Selecciona el tipo de deuda';
         }
         return null;
@@ -415,19 +413,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
               onChanged: (value) {
                 setState(() {
                   _selectedCategory = value;
-                  if (value != 'Deuda SAT') {
-                    _satDebtType = SatDebtType.none;
-                  }
                 });
               },
             ),
-            if (_selectedCategory == 'Deuda SAT') ...[
-              const SizedBox(height: 16),
-              _buildSatDebtDropdown(),
-            ],
-            const SizedBox(height: 16),
-          ] else if (_selectedType == TransactionType.satDebt) ...[
-            _buildSatDebtDropdown(),
             const SizedBox(height: 16),
           ],
           InkWell(
@@ -553,16 +541,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
 
   void _saveTransaction() async {
     if (_formKey.currentState!.validate()) {
-      if (_selectedType == TransactionType.satDebt &&
-          _satDebtType == SatDebtType.none) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Selecciona si la deuda es de IVA o ISR'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
       setState(() {
         _isLoading = true;
       });
@@ -577,7 +555,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen>
           isDeductibleIva: _isDeductibleIva,
           type: _selectedType,
           source: widget.transaction.source,
-          satDebtType: _satDebtType,
           category: _selectedCategory,
           usoCFDI: _selectedUsoCFDI,
           transactionDate: _selectedDate,

@@ -141,5 +141,4 @@ enum TransactionType {
   income,
   expense,
   transfer,
-  satDebt,
 }
