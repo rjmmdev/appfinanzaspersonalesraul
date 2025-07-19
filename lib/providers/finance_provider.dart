@@ -79,13 +79,18 @@ class FinanceProvider extends ChangeNotifier {
     }
     
     // Agregar deudas de tarjetas de crédito
-    double totalCreditCardDebt = _creditCards.fold(0, (sum, card) => sum + card.currentBalance);
+    double totalCreditCardDebt =
+        _creditCards.fold(0, (sum, card) => sum + card.currentBalance);
     double totalDebt = totalCreditDebt + totalCreditCardDebt;
-    
+
+    // Deudas con Hacienda
+    double satDebt = getSatDebtSummary()['total'];
+
     _totalBalances = {
       'totalInAccounts': totalInAccounts,
       'totalDebt': totalDebt,
-      'netWorth': totalInAccounts - totalDebt,
+      'satDebt': satDebt,
+      'netWorth': totalInAccounts - totalDebt - satDebt,
     };
     notifyListeners();
   }
