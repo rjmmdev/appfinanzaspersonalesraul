@@ -261,6 +261,10 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
     final amount = double.tryParse(_amountController.text) ?? 0;
     final subtotal = amount / 1.16;
     final iva = amount - subtotal;
+    final isEcoceIncome = _isEcoce && _selectedType == TransactionType.income;
+    final isrDebt = amount * 0.0125;
+    final totalDebt = iva + (isEcoceIncome ? isrDebt : 0);
+    final netIncome = amount - totalDebt;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -269,16 +273,26 @@ class _CompatibleTransactionScreenState extends State<CompatibleTransactionScree
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Subtotal:', style: TextStyle(color: Colors.grey[600])),
-              Text(currencyFormat.format(subtotal), style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(isEcoceIncome ? 'Ingreso neto:' : 'Subtotal:',
+                  style: TextStyle(color: Colors.grey[600])),
+              Text(
+                currencyFormat.format(isEcoceIncome ? netIncome : subtotal),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
             ],
           ),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('IVA (16%):', style: TextStyle(color: Colors.grey[600])),
-              Text(currencyFormat.format(iva), style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                isEcoceIncome ? 'Deuda a hacienda:' : 'IVA (16%):',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              Text(
+                currencyFormat.format(isEcoceIncome ? totalDebt : iva),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
             ],
           ),
         ],
