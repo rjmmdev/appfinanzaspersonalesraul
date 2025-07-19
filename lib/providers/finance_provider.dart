@@ -117,7 +117,7 @@ class FinanceProvider extends ChangeNotifier {
   }
 
   Future<int?> addTransaction({
-    required int accountId,
+    int? accountId,
     required String description,
     required double amount,
     required bool hasIva,
@@ -139,7 +139,7 @@ class FinanceProvider extends ChangeNotifier {
     }
 
     final transaction = Transaction(
-      accountId: accountId,
+      accountId: accountId ?? -1,
       description: description,
       amount: amount,
       subtotal: subtotal,
@@ -157,20 +157,22 @@ class FinanceProvider extends ChangeNotifier {
 
     final savedTransaction = await _firebaseService.insertTransaction(transaction);
 
-    // Update account balance
-    final account = _accounts.firstWhere((a) => a.id == accountId);
-    double newBalance = account.balance;
-    if (type == TransactionType.income) {
-      newBalance += amount;
-    } else if (type == TransactionType.expense ||
-        type == TransactionType.satDebt) {
-      newBalance -= amount;
-    }
+    // Update account balance only if an account was provided
+    if (accountId != null && accountId != -1) {
+      final account = _accounts.firstWhere((a) => a.id == accountId);
+      double newBalance = account.balance;
+      if (type == TransactionType.income) {
+        newBalance += amount;
+      } else if (type == TransactionType.expense ||
+          type == TransactionType.satDebt) {
+        newBalance -= amount;
+      }
 
-    await _firebaseService.updateAccount(account.copyWith(
-      balance: newBalance,
-      updatedAt: DateTime.now(),
-    ));
+      await _firebaseService.updateAccount(account.copyWith(
+        balance: newBalance,
+        updatedAt: DateTime.now(),
+      ));
+    }
 
     await loadData();
     
@@ -232,21 +234,29 @@ class FinanceProvider extends ChangeNotifier {
     final transaction = _transactions.firstWhere((t) => t.id == transactionId);
     
     // Revertir el cambio en el balance de la cuenta
-    final account = _accounts.firstWhere((a) => a.id == transaction.accountId);
-    double newBalance = account.balance;
+    Account? account;
+    double newBalance = 0;
+    if (transaction.accountId != -1) {
+      account = _accounts.firstWhere((a) => a.id == transaction.accountId);
+      newBalance = account.balance;
+    }
     
-    if (transaction.type == TransactionType.income) {
-      newBalance -= transaction.amount; // Revertir ingreso
-    } else if (transaction.type == TransactionType.expense ||
-        transaction.type == TransactionType.satDebt) {
-      newBalance += transaction.amount; // Revertir gasto
+    if (account != null) {
+      if (transaction.type == TransactionType.income) {
+        newBalance -= transaction.amount; // Revertir ingreso
+      } else if (transaction.type == TransactionType.expense ||
+          transaction.type == TransactionType.satDebt) {
+        newBalance += transaction.amount; // Revertir gasto
+      }
     }
     
     // Actualizar balance de la cuenta
-    await _firebaseService.updateAccount(account.copyWith(
-      balance: newBalance,
-      updatedAt: DateTime.now(),
-    ));
+    if (account != null) {
+      await _firebaseService.updateAccount(account.copyWith(
+        balance: newBalance,
+        updatedAt: DateTime.now(),
+      ));
+    }
     
     // Eliminar la transacción
     await _firebaseService.deleteTransaction(transactionId);
@@ -268,23 +278,30 @@ class FinanceProvider extends ChangeNotifier {
     DateTime? transactionDate,
   }) async {
     final oldTransaction = _transactions.firstWhere((t) => t.id == transactionId);
-    final account = _accounts.firstWhere((a) => a.id == oldTransaction.accountId);
+    Account? account;
+    if (oldTransaction.accountId != -1) {
+      account = _accounts.firstWhere((a) => a.id == oldTransaction.accountId);
+    }
     
     // Revertir el cambio anterior en el balance
-    double newBalance = account.balance;
-    if (oldTransaction.type == TransactionType.income) {
-      newBalance -= oldTransaction.amount;
-    } else if (oldTransaction.type == TransactionType.expense ||
-        oldTransaction.type == TransactionType.satDebt) {
-      newBalance += oldTransaction.amount;
+    double newBalance = account?.balance ?? 0;
+    if (account != null) {
+      if (oldTransaction.type == TransactionType.income) {
+        newBalance -= oldTransaction.amount;
+      } else if (oldTransaction.type == TransactionType.expense ||
+          oldTransaction.type == TransactionType.satDebt) {
+        newBalance += oldTransaction.amount;
+      }
     }
     
     // Aplicar el nuevo cambio
-    if (type == TransactionType.income) {
-      newBalance += amount;
-    } else if (type == TransactionType.expense ||
-        type == TransactionType.satDebt) {
-      newBalance -= amount;
+    if (account != null) {
+      if (type == TransactionType.income) {
+        newBalance += amount;
+      } else if (type == TransactionType.expense ||
+          type == TransactionType.satDebt) {
+        newBalance -= amount;
+      }
     }
     
     // Calcular IVA
@@ -312,12 +329,13 @@ class FinanceProvider extends ChangeNotifier {
     );
     
     await _firebaseService.updateTransaction(updatedTransaction);
-    
-    // Actualizar balance de la cuenta
-    await _firebaseService.updateAccount(account.copyWith(
-      balance: newBalance,
-      updatedAt: DateTime.now(),
-    ));
+
+    if (account != null) {
+      await _firebaseService.updateAccount(account.copyWith(
+        balance: newBalance,
+        updatedAt: DateTime.now(),
+      ));
+    }
     
     await loadData();
   }
@@ -500,5 +518,35 @@ class FinanceProvider extends ChangeNotifier {
     }
     
     return accountBalances;
+  }
+
+  // Obtener resumen de deudas SAT pendientes
+  Map<String, double> getSatDebtSummary() {
+    double ivaDebt = 0;
+    double isrDebt = 0;
+
+    for (final t in _transactions) {
+      if (t.type == TransactionType.satDebt) {
+        if (t.accountId == -1) {
+          if (t.satDebtType == SatDebtType.iva) {
+            ivaDebt += t.amount;
+          } else if (t.satDebtType == SatDebtType.isr) {
+            isrDebt += t.amount;
+          }
+        } else {
+          if (t.satDebtType == SatDebtType.iva) {
+            ivaDebt -= t.amount;
+          } else if (t.satDebtType == SatDebtType.isr) {
+            isrDebt -= t.amount;
+          }
+        }
+      }
+    }
+
+    return {
+      'iva': ivaDebt,
+      'isr': isrDebt,
+      'total': ivaDebt + isrDebt,
+    };
   }
 }
