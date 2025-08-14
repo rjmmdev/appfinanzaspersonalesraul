@@ -16,8 +16,10 @@
       "Bash(dart format:*)",
       "Bash(del libservicesdatabase_service.dart libservicessync_service.dart libserviceslocal_only_service.dart)",
       "Bash(rm:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git add:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

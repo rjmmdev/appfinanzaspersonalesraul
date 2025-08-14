@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.raul.finanzas.finanzasraul"
+    namespace = "com.bubble.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
